@@ -1,18 +1,19 @@
+import { useAuth } from '@/components/auth/AuthContext';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 export default function RegisterScreen() {
@@ -22,19 +23,20 @@ export default function RegisterScreen() {
     email: '',
     password: '',
     confirmPassword: '',
+    userName: '',
   });
-  const [isLoading, setIsLoading] = useState(false);
   const colorScheme = useColorScheme();
+  const { signUp, isLoading } = useAuth();
 
   const updateFormData = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const validateForm = () => {
-    const { firstName, lastName, email, password, confirmPassword } = formData;
+    const { firstName, lastName, email, password, confirmPassword, userName } = formData;
 
-    if (!firstName || !lastName || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!firstName || !lastName || !email || !password || !confirmPassword || !userName) {
+      Alert.alert('Error', 'Please fill in all required fields');
       return false;
     }
 
@@ -44,8 +46,20 @@ export default function RegisterScreen() {
       return false;
     }
 
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters long');
+    if (password.length < 12) {
+      Alert.alert('Error', 'Password must be at least 12 characters long');
+      return false;
+    }
+
+    // Username validation to match Rails backend
+    if (userName.length < 3) {
+      Alert.alert('Error', 'Username must be at least 3 characters long');
+      return false;
+    }
+
+    const usernameRegex = /^[a-zA-Z0-9_]+$/;
+    if (!usernameRegex.test(userName)) {
+      Alert.alert('Error', 'Username can only contain letters, numbers, and underscores');
       return false;
     }
 
@@ -60,29 +74,41 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     if (!validateForm()) return;
 
-    setIsLoading(true);
-
     try {
-      // TODO: Implement actual registration logic with your Rails API
-      console.log('Registering user:', formData);
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await signUp(formData);
 
       Alert.alert(
         'Registration Successful',
-        'Your account has been created successfully!',
+        'Your account has been created successfully! You are now signed in.',
         [
           {
             text: 'OK',
-            onPress: () => router.replace('/(auth)/signin' as any),
+            onPress: () => router.replace('/(tabs)/' as any),
           },
         ]
       );
-    } catch (error) {
-      Alert.alert('Registration Failed', 'Please try again later');
-    } finally {
-      setIsLoading(false);
+    } catch (error: any) {
+      console.error('Registration error:', error);
+
+      let errorMessage = 'Registration failed. Please try again.';
+
+      // Handle specific API errors
+      if (error.errors) {
+        // Rails validation errors format
+        if (error.errors.email) {
+          errorMessage = `Email ${error.errors.email[0]}`;
+        } else if (error.errors.password) {
+          errorMessage = `Password ${error.errors.password[0]}`;
+        } else if (error.errors.first_name) {
+          errorMessage = `First name ${error.errors.first_name[0]}`;
+        } else if (error.errors.last_name) {
+          errorMessage = `Last name ${error.errors.last_name[0]}`;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      Alert.alert('Registration Failed', errorMessage);
     }
   };
 
@@ -145,10 +171,23 @@ export default function RegisterScreen() {
             </View>
 
             <View style={styles.inputContainer}>
+              <Text style={styles.label}>Username</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="johndoe (letters, numbers, and underscores only)"
+                placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
+                value={formData.userName}
+                onChangeText={(value) => updateFormData('userName', value)}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
               <Text style={styles.label}>Password</Text>
               <TextInput
                 style={styles.input}
-                placeholder="At least 6 characters"
+                placeholder="At least 12 characters"
                 placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
                 value={formData.password}
                 onChangeText={(value) => updateFormData('password', value)}

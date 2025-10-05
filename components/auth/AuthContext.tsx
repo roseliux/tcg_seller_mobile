@@ -1,18 +1,32 @@
+import { authAPI, TokenManager, type RegisterRequest } from '@/services/api';
+import { router } from 'expo-router';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface User {
-  id: string;
+  id: number;
   email: string;
+  first_name: string;
+  last_name: string;
+  user_name: string | null;
+  verified: boolean;
+}
+
+interface RegisterData {
   firstName: string;
   lastName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  userName?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (userData: any) => Promise<void>;
-  signOut: () => void;
+  signUp: (userData: RegisterData) => Promise<void>;
+  signOut: () => Promise<void>;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,55 +37,153 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Check if user is already signed in
-    // In a real app, you would check stored tokens here
-    setIsLoading(false);
+    checkAuthState();
   }, []);
+
+  const checkAuthState = async () => {
+    try {
+      console.log('🔄 AuthContext: Checking auth state...');
+      const token = await TokenManager.getToken();
+      const storedUser = await TokenManager.getUser();
+
+      if (token && storedUser) {
+        console.log('🟢 AuthContext: Found stored auth data');
+        // Convert API user format to local user format
+        const userData = {
+          id: storedUser.id,
+          email: storedUser.email,
+          first_name: storedUser.first_name,
+          last_name: storedUser.last_name,
+          user_name: storedUser.user_name,
+          verified: storedUser.verified,
+        };
+        setUser(userData);
+        console.log('🟢 AuthContext: Restored user session:', userData);
+      } else {
+        console.log('🔴 AuthContext: No stored auth data found');
+      }
+    } catch (error) {
+      console.error('🔴 AuthContext: Error checking auth state:', error);
+      // Clear invalid auth data
+      await TokenManager.clearAll();
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const signIn = async (email: string, password: string) => {
     try {
-      // TODO: Implement actual API call to your Rails backend
-      const response = await fetch('http://localhost:3000/auth/signin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      console.log('🔵 AuthContext: Starting sign in process...');
+      setIsLoading(true);
+      const response = await authAPI.login({ email, password });
 
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData.user);
-      } else {
-        throw new Error('Sign in failed');
-      }
+      console.log('🟢 AuthContext: Login successful, storing data...');
+      // Store token and user data
+      await TokenManager.setToken(response.token);
+      await TokenManager.setUser(response.user);
+
+      // Update local state
+      const userData = {
+        id: response.user.id,
+        email: response.user.email,
+        first_name: response.user.first_name,
+        last_name: response.user.last_name,
+        user_name: response.user.user_name,
+        verified: response.user.verified,
+      };
+
+      setUser(userData);
+      console.log('🟢 AuthContext: User state updated:', userData);
+      console.log('🟢 AuthContext: User is now authenticated!');
+
+      // Navigate to main app after successful sign in
+      console.log('🔄 AuthContext: Navigating to main app...');
+      router.replace('/(tabs)');
     } catch (error) {
+      console.error('🔴 AuthContext: Sign in error:', error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const signUp = async (userData: any) => {
+  const signUp = async (userData: RegisterData) => {
     try {
-      // TODO: Implement actual API call to your Rails backend
-      const response = await fetch('http://localhost:3000/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
+      console.log('🔵 AuthContext: Starting sign up process...');
+      setIsLoading(true);
 
-      if (!response.ok) {
-        throw new Error('Registration failed');
-      }
+      // Transform the data to match the API format
+      const registerRequest: RegisterRequest = {
+        email: userData.email,
+        password: userData.password,
+        password_confirmation: userData.confirmPassword,
+        first_name: userData.firstName,
+        last_name: userData.lastName,
+        user_name: userData.userName,
+      };
+
+      const response = await authAPI.register(registerRequest);
+
+      console.log('🟢 AuthContext: Registration successful, storing data...');
+      // Store token and user data
+      await TokenManager.setToken(response.token);
+      await TokenManager.setUser(response.user);
+
+      // Update local state
+      const newUserData = {
+        id: response.user.id,
+        email: response.user.email,
+        first_name: response.user.first_name,
+        last_name: response.user.last_name,
+        user_name: response.user.user_name,
+        verified: response.user.verified,
+      };
+
+      setUser(newUserData);
+      console.log('🟢 AuthContext: User state updated after registration:', newUserData);
+      console.log('🟢 AuthContext: User is now authenticated!');
+
+      // Navigate to main app after successful registration
+      console.log('🔄 AuthContext: Navigating to main app...');
+      router.replace('/(tabs)');
     } catch (error) {
+      console.error('🔴 AuthContext: Sign up error:', error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const signOut = () => {
-    setUser(null);
-    // TODO: Clear stored tokens
+  const signOut = async () => {
+    try {
+      console.log('🔵 AuthContext: Starting sign out process...');
+      setIsLoading(true);
+
+      // Call logout API (don't throw on failure)
+      await authAPI.logout();
+
+      // Clear local storage
+      await TokenManager.clearAll();
+
+      // Update local state
+      setUser(null);
+      console.log('🟢 AuthContext: User signed out successfully');
+
+      // Navigate back to sign in
+      console.log('🔄 AuthContext: Navigating to sign in...');
+      router.replace('/(auth)/signin');
+    } catch (error) {
+      console.error('🔴 AuthContext: Sign out error:', error);
+      // Still clear local data even if API call fails
+      await TokenManager.clearAll();
+      setUser(null);
+      router.replace('/(auth)/signin');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const isAuthenticated = !!user;
 
   return (
     <AuthContext.Provider
@@ -81,6 +193,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signIn,
         signUp,
         signOut,
+        isAuthenticated,
       }}
     >
       {children}

@@ -1,3 +1,4 @@
+import { useAuth } from '@/components/auth/AuthContext';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import { router } from 'expo-router';
@@ -18,8 +19,8 @@ import {
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const colorScheme = useColorScheme();
+  const { signIn, isLoading } = useAuth();
 
   const validateForm = () => {
     if (!email || !password) {
@@ -39,21 +40,20 @@ export default function SignInScreen() {
   const handleSignIn = async () => {
     if (!validateForm()) return;
 
-    setIsLoading(true);
-
     try {
-      // TODO: Implement actual sign-in logic with your Rails API
-      console.log('Signing in with:', { email, password });
+      await signIn(email, password);
+      router.replace('/(tabs)/' as any);
+    } catch (error: any) {
+      console.error('Sign in error:', error);
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      let errorMessage = 'Sign in failed. Please check your credentials and try again.';
 
-      // Navigate to main app on success
-      router.replace('/(tabs)');
-    } catch (error) {
-      Alert.alert('Sign In Failed', 'Please check your credentials and try again');
-    } finally {
-      setIsLoading(false);
+      // Handle specific API errors
+      if (error.message) {
+        errorMessage = error.message;
+      }
+
+      Alert.alert('Sign In Failed', errorMessage);
     }
   };
 
