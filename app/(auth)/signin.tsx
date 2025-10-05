@@ -1,9 +1,10 @@
 import { useAuth } from '@/components/auth/AuthContext';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
+import { useAuthRedirect } from '@/hooks/useAuthRedirect';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -20,14 +21,10 @@ export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const colorScheme = useColorScheme();
-  const { signIn, isLoading, isAuthenticated } = useAuth();
+  const { signIn, isLoading } = useAuth();
 
-  // Redirect to home if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.replace('/(tabs)');
-    }
-  }, [isAuthenticated]);
+  // Use the extracted redirect hook
+  useAuthRedirect();
 
   const validateForm = () => {
     if (!email || !password) {
