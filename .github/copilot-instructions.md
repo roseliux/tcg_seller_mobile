@@ -20,8 +20,9 @@ This is a **React Native with Expo SDK 54** mobile application for a Trading Car
 # Install dependencies - ALWAYS run this first
 npm install
 
-# Note: Node.js version requirement
-# Current project requires Node.js >= 20.19.4 (shows warnings on 20.17.0 but still works)
+# Note: Version requirements
+# Node.js >= 20.19.4 (shows warnings on 20.17.0 but still works)
+# Jest 29.7.0 (REQUIRED for Expo SDK 54 compatibility - do NOT upgrade to Jest 30.x)
 # Consider upgrading Node.js for optimal compatibility
 ```
 
@@ -246,12 +247,13 @@ await signOut();
 ## Common Pitfalls & Solutions
 
 1. **Node.js Version**: Current setup shows warnings with Node.js 20.17.0, optimal version is >= 20.19.4
-2. **Metro Bundler**: Clear cache with `npx expo start --clear` if experiencing module resolution issues
-3. **TypeScript Paths**: Use `@/` prefix for imports from project root
-4. **Platform Differences**: Test on actual devices, not just simulators, especially for native features
-5. **Build Dependencies**: Ensure Expo CLI and EAS CLI are installed globally for builds
-6. **Network Testing**: Use actual device (not simulator) to test API connectivity with Rails backend
-7. **Authentication Flow**: Ensure Rails backend is running before testing mobile authentication
+2. **Jest Version**: Use Jest 29.7.0 (NOT 30.x) for Expo SDK 54 compatibility. If you see "expected version: ~29.7.0" warnings, downgrade Jest
+3. **Metro Bundler**: Clear cache with `npx expo start --clear` if experiencing module resolution issues
+4. **TypeScript Paths**: Use `@/` prefix for imports from project root
+5. **Platform Differences**: Test on actual devices, not just simulators, especially for native features
+6. **Build Dependencies**: Ensure Expo CLI and EAS CLI are installed globally for builds
+7. **Network Testing**: Use actual device (not simulator) to test API connectivity with Rails backend
+8. **Authentication Flow**: Ensure Rails backend is running before testing mobile authentication
 
 ## Quick Reference
 

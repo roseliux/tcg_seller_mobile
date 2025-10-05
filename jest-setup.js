@@ -33,11 +33,15 @@ jest.mock('expo-router', () => ({
   },
 }));
 
-// Enhanced React Native mocks
-jest.mock('react-native/Libraries/Utilities/Platform', () => ({
+// Define Platform mock before any React Native imports
+global.Platform = {
   OS: 'ios',
   select: jest.fn((obj) => obj.ios || obj.default),
-}));
+  Version: 15,
+  isPad: false,
+  isTV: false,
+  isTesting: true,
+};
 
 // Mock useColorScheme hook
 jest.mock('react-native/Libraries/Utilities/useColorScheme', () => ({

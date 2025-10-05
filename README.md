@@ -8,13 +8,14 @@ React Native mobile application for the TCG (Trading Card Game) marketplace buil
 ✅ **Rails API integration with session management**
 ✅ **Secure token storage and session restoration**
 ✅ **Protected navigation with automatic redirects**
-✅ **Jest testing framework with 10 passing tests**
+✅ **Jest testing framework with 41 passing tests (Jest 29.7.0 - Expo SDK 54 compatible)**
 
 ## 🚀 **Quick Start**
 
 ### **Prerequisites**
-- Node.js 20.17.0+
+- Node.js 20.17.0+ (optimal: >= 20.19.4 for best React Native compatibility)
 - npm or yarn
+- **Jest 29.7.0** (automatically installed - compatible with Expo SDK 54)
 
 ### **Installation**
 ```bash
@@ -85,8 +86,8 @@ npm start
 - **Session tokens** via `X-Session-Token` header
 
 ### **Testing**
-- **Jest** with TypeScript support
-- **10 passing tests** covering authentication logic
+- **Jest 29.7.0** with TypeScript support (Expo SDK 54 compatible)
+- **41 passing tests** covering authentication, API, and components
 - **React Native Testing Library** setup
 - **Comprehensive mocking** for API and storage
 
@@ -360,8 +361,10 @@ test('should handle login API call', async () => {
 
 **Tests failing?**
 - Run `npm test` to see current test status
+- **Jest Version**: Must use Jest 29.7.0 (not 30.x) for Expo SDK 54 compatibility
 - Check Jest configuration in `package.json`
 - Ensure all dependencies are installed
+- If you see Platform API errors, verify jest-setup.js has proper mocks
 
 ### **Clear Cache**
 ```bash
