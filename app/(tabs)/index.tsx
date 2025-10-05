@@ -1,10 +1,10 @@
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { useAuth } from '@/components/auth/AuthContext';
 import { Text, View } from '@/components/Themed';
 
 export default function TabOneScreen() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
 
   return (
     <View style={styles.container}>
@@ -14,33 +14,7 @@ export default function TabOneScreen() {
         <Text style={styles.welcomeText}>
           Hello, {user?.first_name} {user?.last_name}! 👋
         </Text>
-        {user?.user_name && (
-          <Text style={styles.usernameText}>@{user.user_name}</Text>
-        )}
-        <Text style={styles.emailText}>{user?.email}</Text>
-        {user?.verified && (
-          <Text style={styles.verifiedText}>✅ Verified Account</Text>
-        )}
       </View>
-
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-
-      <View style={styles.actionsContainer}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <TouchableOpacity style={styles.actionButton}>
-          <Text style={styles.actionButtonText}>Browse Cards</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton}>
-          <Text style={styles.actionButtonText}>My Collection</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton}>
-          <Text style={styles.actionButtonText}>Marketplace</Text>
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
-        <Text style={styles.signOutButtonText}>Sign Out</Text>
-      </TouchableOpacity>
     </View>
   );
 }
