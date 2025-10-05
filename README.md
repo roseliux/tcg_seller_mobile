@@ -147,11 +147,13 @@ __tests__/               # Testing framework
 - ✅ **Error handling** with user-friendly messages
 
 ### 🧪 **Testing & Quality**
-- ✅ **Jest testing framework** with TypeScript
-- ✅ **10 passing tests** (100% success rate)
-- ✅ **Authentication logic validation**
-- ✅ **API mocking and error scenarios**
-- ✅ **Comprehensive test coverage**
+- ✅ **Jest testing framework** with React Native preset
+- ✅ **41 passing tests** (100% success rate)
+- ✅ **React Native Testing Library** for component testing
+- ✅ **Complete API mocking** with axios interceptors
+- ✅ **Authentication integration tests** with AuthContext
+- ✅ **Component rendering and interaction tests**
+- ✅ **Comprehensive test coverage** across all layers
 
 ## 🧪 **Development Commands**
 
@@ -171,17 +173,26 @@ npx expo start --clear
 
 ### **Testing**
 ```bash
-# Run all tests
+# Run all tests (41 tests across 9 suites)
 npm test
 
-# Run specific test patterns
-npm test -- --testPathPatterns="basic|auth-logic"
+# Run specific test categories
+npm test -- --testPathPatterns="basic|auth-logic"           # Core tests (10 tests)
+npm test -- --testPathPatterns="RNTL"                       # Component tests (10 tests)
+npm test -- --testPathPatterns="auth-clean|auth-api|api"    # API tests (18 tests)
+npm test -- --testPathPatterns="SignIn"                     # Integration tests (3 tests)
 
 # Run tests in watch mode
 npm run test:watch
 
+# Update snapshots
+npm test -- --updateSnapshot
+
 # TypeScript type checking
 npx tsc --noEmit
+
+# View test coverage
+npm test -- --coverage
 ```
 
 ### **Backend (Rails API)**
@@ -216,6 +227,95 @@ if (isAuthenticated && user) {
 - **Token Security**: Stored securely in AsyncStorage
 - **Session Cleanup**: Proper logout with token removal
 - **Navigation Guards**: Protected routes redirect to sign-in
+
+## 🧪 **Testing Framework**
+
+This project uses a comprehensive testing setup with **Jest** and **React Native Testing Library** for reliable component and integration testing.
+
+### **Test Categories & Coverage**
+
+#### **📱 Component Tests (10 tests)**
+- **React Native Testing Library**: Component rendering and interactions
+- **User Interaction Testing**: Button presses, form inputs, loading states
+- **Snapshot Testing**: Visual regression testing for components
+- **Theme Integration**: Dark/light mode component rendering
+
+```bash
+# Run component tests only
+npm test -- --testPathPatterns="RNTL|StyledText"
+```
+
+#### **🔐 Authentication Tests (28 tests)**
+- **API Integration**: Login, registration, error handling (18 tests)
+- **Logic Validation**: Email/password validation, form validation (7 tests)
+- **AuthContext Integration**: Full authentication flow with navigation (3 tests)
+- **Token Management**: Secure storage, session restoration, cleanup
+
+```bash
+# Run all authentication tests
+npm test -- --testPathPatterns="auth|SignIn"
+```
+
+#### **⚙️ Core Functionality Tests (3 tests)**
+- **Basic App Functions**: Configuration, utilities, core features
+- **Platform Integration**: React Native environment setup
+- **Development Environment**: Testing framework validation
+
+```bash
+# Run basic functionality tests
+npm test -- --testPathPatterns="basic"
+```
+
+### **Testing Infrastructure**
+
+#### **Mock Systems**
+- **Axios HTTP Mocking**: Complete API request/response simulation
+- **AsyncStorage Mocking**: Secure storage simulation for token management
+- **Expo Router Mocking**: Navigation testing with route verification
+- **React Native API Mocking**: Platform-specific API mocking
+
+#### **Test Utilities**
+- **Custom Test Helpers**: Authentication helpers, API response builders
+- **Mock Data Factories**: Realistic user and API response generation
+- **Integration Patterns**: End-to-end authentication flow testing
+
+#### **Performance & Quality**
+- **Fast Test Execution**: 41 tests complete in ~3 seconds
+- **Reliable Mocking**: Deterministic test results with proper isolation
+- **TypeScript Integration**: Full type safety in tests
+- **CI/CD Ready**: All tests pass consistently in automated environments
+
+### **Testing Best Practices**
+
+```typescript
+// Example: Component Testing with RNTL
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+
+test('should handle user sign in', async () => {
+  const { getByTestId } = render(<SignInForm />);
+
+  fireEvent.press(getByTestId('sign-in-button'));
+
+  await waitFor(() => {
+    expect(getByTestId('success-message')).toBeTruthy();
+  });
+});
+
+// Example: API Testing with Mocked Responses
+test('should handle login API call', async () => {
+  mockAxiosInstance.post.mockResolvedValueOnce({
+    data: { id: 'session123' },
+    headers: { 'x-session-token': 'test-token-123' }
+  });
+
+  const result = await authAPI.login({
+    email: 'test@example.com',
+    password: 'password123456'
+  });
+
+  expect(result.token).toBe('test-token-123');
+});
+```
 
 ## 📋 **Roadmap**
 

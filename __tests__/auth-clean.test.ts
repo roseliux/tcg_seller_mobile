@@ -3,15 +3,38 @@
  * Tests the authentication service functions
  */
 
-// Mock axios
-jest.mock('axios');
+// Mock axios at the module level BEFORE importing anything
+jest.mock('axios', () => {
+  const mockAxiosInstance = {
+    get: jest.fn(),
+    post: jest.fn(),
+    delete: jest.fn(),
+    interceptors: {
+      request: { use: jest.fn() },
+      response: { use: jest.fn() },
+    },
+  };
+
+  const mockAxios = {
+    create: jest.fn(() => mockAxiosInstance),
+    get: jest.fn(),
+    post: jest.fn(),
+    delete: jest.fn(),
+  };
+
+  // Store the mock instance for tests to access
+  (mockAxios as any).__mockInstance = mockAxiosInstance;
+
+  return mockAxios;
+});
 
 // Import after mocking
 import axios from 'axios';
 import { authAPI, TokenManager } from '../services/api';
 
-// Get the mocked axios
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+// Get the mock instance
+const mockAxios = axios as jest.Mocked<typeof axios>;
+const mockAxiosInstance = (mockAxios as any).__mockInstance;
 
 describe('Authentication API', () => {
   beforeEach(() => {
@@ -83,7 +106,7 @@ describe('Authentication API', () => {
 
   describe('authAPI.login', () => {
     it('should successfully login and return user data', async () => {
-      // Mock API responses
+      // Mock the API responses
       const mockLoginResponse = {
         data: { id: 'session123' },
         headers: { 'x-session-token': 'test-token-123' },
@@ -97,17 +120,16 @@ describe('Authentication API', () => {
           first_name: 'Test',
           last_name: 'User',
           user_name: 'testuser',
+          verified: true,
+          created_at: '2024-01-01',
+          updated_at: '2024-01-01',
         },
         status: 200,
       };
 
-      // Setup axios mock
-      const mockApiInstance = {
-        post: jest.fn().mockResolvedValueOnce(mockLoginResponse),
-        get: jest.fn().mockResolvedValueOnce(mockUserResponse),
-      } as any;
-
-      mockedAxios.create.mockReturnValueOnce(mockApiInstance);
+      // Setup the mock responses
+      mockAxiosInstance.post.mockResolvedValueOnce(mockLoginResponse);
+      mockAxiosInstance.get.mockResolvedValueOnce(mockUserResponse);
 
       const result = await authAPI.login({
         email: 'test@example.com',
@@ -120,11 +142,15 @@ describe('Authentication API', () => {
         token: 'test-token-123',
       });
 
-      expect(mockApiInstance.post).toHaveBeenCalledWith('/sign_in', {
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/sign_in', {
         email: 'test@example.com',
         password: 'password123456',
       });
-      expect(mockApiInstance.get).toHaveBeenCalledWith('/me');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/me', {
+        headers: {
+          'Authorization': 'Bearer test-token-123',
+        },
+      });
     });
 
     it('should handle login errors', async () => {
@@ -135,11 +161,7 @@ describe('Authentication API', () => {
         },
       };
 
-      const mockApiInstance = {
-        post: jest.fn().mockRejectedValueOnce(mockError),
-      } as any;
-
-      mockedAxios.create.mockReturnValueOnce(mockApiInstance);
+      mockAxiosInstance.post.mockRejectedValueOnce(mockError);
 
       await expect(
         authAPI.login({
@@ -159,11 +181,7 @@ describe('Authentication API', () => {
         status: 201,
       };
 
-      const mockApiInstance = {
-        post: jest.fn().mockResolvedValueOnce(mockLoginResponse),
-      } as any;
-
-      mockedAxios.create.mockReturnValueOnce(mockApiInstance);
+      mockAxiosInstance.post.mockResolvedValueOnce(mockLoginResponse);
 
       await expect(
         authAPI.login({

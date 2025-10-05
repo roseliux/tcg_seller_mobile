@@ -6,6 +6,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import React from 'react';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { AuthProvider, useAuth } from '../components/auth/AuthContext';
 import { authAPI, TokenManager } from '../services/api';
 
@@ -23,13 +24,15 @@ jest.mock('../services/api', () => ({
   },
 }));
 
-// Mock expo-router
-const mockRouter = {
-  replace: jest.fn(),
-};
-jest.mock('expo-router', () => ({
-  router: mockRouter,
-}));
+// Type the mocked functions
+const mockedAuthAPI = authAPI as jest.Mocked<typeof authAPI>;
+const mockedTokenManager = TokenManager as jest.Mocked<typeof TokenManager>;
+
+// Import the router to access the mocked version
+import { router } from 'expo-router';
+
+// Get the mocked router functions (already mocked in jest-setup.js)
+const mockRouterReplace = router.replace as jest.MockedFunction<typeof router.replace>;
 
 // Test component that uses the auth context
 const TestSignInComponent = () => {
@@ -44,18 +47,18 @@ const TestSignInComponent = () => {
   };
 
   return (
-    <>
-      <button testID="sign-in-button" onPress={handleSignIn}>
-        Sign In
-      </button>
-      {isLoading && <text testID="loading">Loading...</text>}
-      {user && <text testID="user-email">{user.email}</text>}
-      {isAuthenticated && <text testID="authenticated">Authenticated</text>}
-    </>
+    <View>
+      <TouchableOpacity testID="sign-in-button" onPress={handleSignIn}>
+        <Text>Sign In</Text>
+      </TouchableOpacity>
+      {isLoading && <Text testID="loading">Loading...</Text>}
+      {user && <Text testID="user-email">{user.email}</Text>}
+      {isAuthenticated && <Text testID="authenticated">Authenticated</Text>}
+    </View>
   );
 };
 
-const TestWrapper = ({ children }) => {
+const TestWrapper = ({ children }: { children: React.ReactNode }) => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -74,7 +77,7 @@ describe('Sign In Authentication', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Reset router mock
-    mockRouter.replace.mockClear();
+    mockRouterReplace.mockClear();
   });
 
   it('should successfully sign in a user', async () => {
@@ -86,17 +89,19 @@ describe('Sign In Authentication', () => {
       last_name: 'User',
       user_name: 'testuser',
       verified: true,
+      created_at: '2024-01-01',
+      updated_at: '2024-01-01',
     };
 
     const mockResponse = {
       user: mockUser,
-      session: { id: 'session123' },
+      session: { id: 'session123', expires_at: '2024-12-31T23:59:59Z' },
       token: 'mock-token-123',
     };
 
-    authAPI.login.mockResolvedValueOnce(mockResponse);
-    TokenManager.setToken.mockResolvedValueOnce();
-    TokenManager.setUser.mockResolvedValueOnce();
+    mockedAuthAPI.login.mockResolvedValueOnce(mockResponse);
+    mockedTokenManager.setToken.mockResolvedValueOnce();
+    mockedTokenManager.setUser.mockResolvedValueOnce();
 
     const { getByTestId, queryByTestId } = render(
       <TestWrapper>
@@ -124,14 +129,17 @@ describe('Sign In Authentication', () => {
     });
 
     // Verify API was called with correct parameters
-    expect(authAPI.login).toHaveBeenCalledWith('test@example.com', 'password123456');
+    expect(mockedAuthAPI.login).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      password: 'password123456',
+    });
 
     // Verify token and user were stored
-    expect(TokenManager.setToken).toHaveBeenCalledWith('mock-token-123');
-    expect(TokenManager.setUser).toHaveBeenCalledWith(mockUser);
+    expect(mockedTokenManager.setToken).toHaveBeenCalledWith('mock-token-123');
+    expect(mockedTokenManager.setUser).toHaveBeenCalledWith(mockUser);
 
     // Verify navigation occurred
-    expect(mockRouter.replace).toHaveBeenCalledWith('/(tabs)');
+    expect(mockRouterReplace).toHaveBeenCalledWith('/(tabs)');
 
     // Verify user data is displayed
     expect(getByTestId('user-email')).toHaveTextContent('test@example.com');
@@ -144,7 +152,7 @@ describe('Sign In Authentication', () => {
       errors: {},
     };
 
-    authAPI.login.mockRejectedValueOnce(mockError);
+    mockedAuthAPI.login.mockRejectedValueOnce(mockError);
 
     const { getByTestId, queryByTestId } = render(
       <TestWrapper>
@@ -166,11 +174,11 @@ describe('Sign In Authentication', () => {
     expect(queryByTestId('user-email')).toBeNull();
 
     // Should not navigate
-    expect(mockRouter.replace).not.toHaveBeenCalled();
+    expect(mockRouterReplace).not.toHaveBeenCalled();
 
     // Should not store token/user
-    expect(TokenManager.setToken).not.toHaveBeenCalled();
-    expect(TokenManager.setUser).not.toHaveBeenCalled();
+    expect(mockedTokenManager.setToken).not.toHaveBeenCalled();
+    expect(mockedTokenManager.setUser).not.toHaveBeenCalled();
   });
 
   it('should restore user session on app load', async () => {
@@ -182,10 +190,12 @@ describe('Sign In Authentication', () => {
       last_name: 'User',
       user_name: 'storeduser',
       verified: true,
+      created_at: '2024-01-01',
+      updated_at: '2024-01-01',
     };
 
-    TokenManager.getToken.mockResolvedValueOnce('stored-token');
-    TokenManager.getUser.mockResolvedValueOnce(mockUser);
+    mockedTokenManager.getToken.mockResolvedValueOnce('stored-token');
+    mockedTokenManager.getUser.mockResolvedValueOnce(mockUser);
 
     const { getByTestId } = render(
       <TestWrapper>

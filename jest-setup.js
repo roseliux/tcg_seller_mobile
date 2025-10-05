@@ -1,12 +1,19 @@
 // Jest setup file
-// import '@testing-library/react-native/extend-expect';
+import '@testing-library/jest-native/extend-expect';
 
-// Mock AsyncStorage
+// Define global variables for React Native
+global.__DEV__ = true;
+
+// Mock AsyncStorage with default implementations
 jest.mock('@react-native-async-storage/async-storage', () => ({
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
+  getItem: jest.fn().mockResolvedValue(null),
+  setItem: jest.fn().mockResolvedValue(undefined),
+  removeItem: jest.fn().mockResolvedValue(undefined),
+  clear: jest.fn().mockResolvedValue(undefined),
+  getAllKeys: jest.fn().mockResolvedValue([]),
+  multiGet: jest.fn().mockResolvedValue([]),
+  multiSet: jest.fn().mockResolvedValue(undefined),
+  multiRemove: jest.fn().mockResolvedValue(undefined),
 }));
 
 // Mock expo-router
@@ -26,33 +33,57 @@ jest.mock('expo-router', () => ({
   },
 }));
 
-// Mock react-native Platform
-jest.mock('react-native', () => {
-  const RN = jest.requireActual('react-native');
-  return {
-    ...RN,
-    Platform: {
-      OS: 'ios',
-      select: jest.fn((obj) => obj.ios),
-    },
-  };
-});
+// Enhanced React Native mocks
+jest.mock('react-native/Libraries/Utilities/Platform', () => ({
+  OS: 'ios',
+  select: jest.fn((obj) => obj.ios || obj.default),
+}));
 
-// Mock axios
-jest.mock('axios', () => ({
-  create: jest.fn(() => ({
-    get: jest.fn(),
-    post: jest.fn(),
-    delete: jest.fn(),
+// Mock useColorScheme hook
+jest.mock('react-native/Libraries/Utilities/useColorScheme', () => ({
+  __esModule: true,
+  default: jest.fn(() => 'light'),
+}));
+
+// Mock Appearance
+jest.mock('react-native/Libraries/Utilities/Appearance', () => ({
+  getColorScheme: jest.fn(() => 'light'),
+  addChangeListener: jest.fn(),
+  removeChangeListener: jest.fn(),
+}));
+
+// Mock axios with proper response structure and default implementations
+jest.mock('axios', () => {
+  const mockAxiosInstance = {
+    get: jest.fn().mockResolvedValue({ data: {}, status: 200, headers: {} }),
+    post: jest.fn().mockResolvedValue({ data: {}, status: 200, headers: {} }),
+    delete: jest.fn().mockResolvedValue({ data: {}, status: 200, headers: {} }),
+    put: jest.fn().mockResolvedValue({ data: {}, status: 200, headers: {} }),
+    patch: jest.fn().mockResolvedValue({ data: {}, status: 200, headers: {} }),
     interceptors: {
       request: { use: jest.fn() },
       response: { use: jest.fn() },
     },
-  })),
-  get: jest.fn(),
-  post: jest.fn(),
-  delete: jest.fn(),
-}));
+  };
+
+  return {
+    create: jest.fn(() => mockAxiosInstance),
+    get: jest.fn().mockResolvedValue({ data: {}, status: 200, headers: {} }),
+    post: jest.fn().mockResolvedValue({ data: {}, status: 200, headers: {} }),
+    delete: jest.fn().mockResolvedValue({ data: {}, status: 200, headers: {} }),
+    put: jest.fn().mockResolvedValue({ data: {}, status: 200, headers: {} }),
+    patch: jest.fn().mockResolvedValue({ data: {}, status: 200, headers: {} }),
+    isCancel: jest.fn().mockReturnValue(false),
+    CancelToken: {
+      source: jest.fn().mockReturnValue({
+        token: {},
+        cancel: jest.fn(),
+      }),
+    },
+    // Expose the mock instance for testing
+    __mockInstance: mockAxiosInstance,
+  };
+});
 
 // Global test timeout
 jest.setTimeout(10000);

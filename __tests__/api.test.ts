@@ -3,19 +3,38 @@
  * Tests the API service functions for authentication
  */
 
+// Mock axios at the module level BEFORE importing anything
+jest.mock('axios', () => {
+  const mockAxiosInstance = {
+    get: jest.fn(),
+    post: jest.fn(),
+    delete: jest.fn(),
+    interceptors: {
+      request: { use: jest.fn() },
+      response: { use: jest.fn() },
+    },
+  };
+
+  const mockAxios = {
+    create: jest.fn(() => mockAxiosInstance),
+    get: jest.fn(),
+    post: jest.fn(),
+    delete: jest.fn(),
+  };
+
+  // Store the mock instance for tests to access
+  (mockAxios as any).__mockInstance = mockAxiosInstance;
+
+  return mockAxios;
+});
+
+// Import after mocking
 import axios from 'axios';
 import { authAPI, TokenManager } from '../services/api';
 
-// Mock axios
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
-
-// Mock AsyncStorage
-jest.mock('@react-native-async-storage/async-storage', () => ({
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-}));
+// Get the mock instance
+const mockAxios = axios as jest.Mocked<typeof axios>;
+const mockAxiosInstance = (mockAxios as any).__mockInstance;
 
 describe('API Authentication', () => {
   beforeEach(() => {
@@ -42,18 +61,9 @@ describe('API Authentication', () => {
         status: 200,
       };
 
-      // Setup axios mocks
-      mockedAxios.create.mockReturnValue({
-        post: jest.fn()
-          .mockResolvedValueOnce(mockLoginResponse), // /sign_in call
-        get: jest.fn()
-          .mockResolvedValueOnce(mockUserResponse), // /me call
-        delete: jest.fn(),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
-      } as any);
+      // Setup the mock responses
+      mockAxiosInstance.post.mockResolvedValueOnce(mockLoginResponse);
+      mockAxiosInstance.get.mockResolvedValueOnce(mockUserResponse);
 
       const result = await authAPI.login({
         email: 'test@example.com',
@@ -64,6 +74,16 @@ describe('API Authentication', () => {
         user: mockUserResponse.data,
         session: mockLoginResponse.data,
         token: 'test-token-123',
+      });
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/sign_in', {
+        email: 'test@example.com',
+        password: 'password123456',
+      });
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/me', {
+        headers: {
+          'Authorization': 'Bearer test-token-123',
+        },
       });
     });
 
@@ -76,15 +96,7 @@ describe('API Authentication', () => {
         },
       };
 
-      mockedAxios.create.mockReturnValue({
-        post: jest.fn().mockRejectedValueOnce(mockError),
-        get: jest.fn(),
-        delete: jest.fn(),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
-      } as any);
+      mockAxiosInstance.post.mockRejectedValueOnce(mockError);
 
       await expect(
         authAPI.login({
@@ -105,15 +117,7 @@ describe('API Authentication', () => {
         status: 201,
       };
 
-      mockedAxios.create.mockReturnValue({
-        post: jest.fn().mockResolvedValueOnce(mockLoginResponse),
-        get: jest.fn(),
-        delete: jest.fn(),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
-      } as any);
+      mockAxiosInstance.post.mockResolvedValueOnce(mockLoginResponse);
 
       await expect(
         authAPI.login({
@@ -144,7 +148,16 @@ describe('API Authentication', () => {
 
     it('should store and retrieve user data', async () => {
       const AsyncStorage = require('@react-native-async-storage/async-storage');
-      const mockUser = { id: 1, email: 'test@example.com' };
+      const mockUser = {
+        id: 1,
+        email: 'test@example.com',
+        first_name: 'Test',
+        last_name: 'User',
+        user_name: 'testuser',
+        verified: true,
+        created_at: '2024-01-01',
+        updated_at: '2024-01-01'
+      };
 
       AsyncStorage.setItem.mockResolvedValueOnce();
       AsyncStorage.getItem.mockResolvedValueOnce(JSON.stringify(mockUser));
