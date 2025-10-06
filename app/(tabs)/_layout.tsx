@@ -18,6 +18,18 @@ function TabBarIcon(props: {
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
+  const notificationsLink = (<Link href="/notifications" asChild>
+    <Pressable>
+      {({ pressed }) => (
+        <FontAwesome
+          name="bell"
+          size={25}
+          color={Colors[colorScheme ?? 'light'].text}
+          style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }} />
+      )}
+    </Pressable>
+  </Link>)
+
   return (
     <Tabs
       screenOptions={{
@@ -31,20 +43,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
-          headerRight: () => (
-            <Link href="/notifications" asChild>
-              <Pressable>
-                {({ pressed }) => (
-                  <FontAwesome
-                    name="bell"
-                    size={25}
-                    color={Colors[colorScheme ?? 'light'].text}
-                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
-          ),
+          headerRight: () => notificationsLink,
         }}
       />
       <Tabs.Screen
@@ -52,6 +51,8 @@ export default function TabLayout() {
         options={{
           title: 'Marketplace',
           tabBarIcon: ({ color }) => <TabBarIcon name="shopping-cart" color={color} />,
+          headerShown: false,
+          // header: () => (<TextInput placeholder="Search for products." placeholderTextColor="#999"/>),
         }}
       />
       <Tabs.Screen
@@ -59,6 +60,7 @@ export default function TabLayout() {
         options={{
           title: 'Messages',
           tabBarIcon: ({ color }) => <TabBarIcon name="comments" color={color} />,
+          headerRight: () => notificationsLink,
         }}
       />
       <Tabs.Screen
@@ -66,8 +68,18 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
+          headerRight: () => notificationsLink,
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          href: null,
+          title: 'Notifications',
+          headerShown: false,
         }}
       />
     </Tabs>
+
   );
 }

@@ -150,6 +150,7 @@ export default function NotificationsScreen() {
   );
 
   return (
+
     <View style={styles.container}>
       {/* Header with back button */}
       <View style={styles.header}>
@@ -159,7 +160,7 @@ export default function NotificationsScreen() {
         >
           <FontAwesome name="chevron-left" size={18} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Activity</Text>
+        {/* <Text style={styles.headerTitle}>Activity</Text> */}
         <View style={styles.headerSpacer} />
       </View>
 

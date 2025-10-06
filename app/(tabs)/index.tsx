@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 import { useAuth } from '@/components/auth/AuthContext';
 import { Text, View } from '@/components/Themed';
 
-export default function TabOneScreen() {
+export default function HomeScreen() {
   const { user } = useAuth();
 
   return (
