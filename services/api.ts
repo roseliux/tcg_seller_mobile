@@ -1,17 +1,19 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Platform } from 'react-native';
+import { baseURL, getDevServerIP } from './ip-config';
 
 // API Configuration
 const API_BASE_URL = __DEV__
   ? Platform.OS === 'android'
-    ? 'http://10.0.2.2:3000'        // Android emulator
-    : 'http://192.168.68.115:3000'  // Your computer's IP for iOS/physical devices
+    ? 'http://10.0.2.2:3000'  // Android emulator
+    : baseURL                  // Dynamic IP for iOS/physical devices
   : 'https://your-production-api.com'; // Production - update with your actual URL
 
 console.log('🌐 API Configuration:');
 console.log('  Platform.OS:', Platform.OS);
 console.log('  __DEV__:', __DEV__);
+console.log('  Dynamic IP:', getDevServerIP());
 console.log('  API_BASE_URL:', API_BASE_URL);
 
 // Create axios instance
