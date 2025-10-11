@@ -18,11 +18,23 @@ function TabBarIcon(props: {
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
-  const notificationsLink = (<Link href="/notifications" asChild>
+  const notificationsLink = (<Link href="/(tabs)/notifications" asChild>
     <Pressable>
       {({ pressed }) => (
         <FontAwesome
           name="bell"
+          size={25}
+          color={Colors[colorScheme ?? 'light'].text}
+          style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }} />
+      )}
+    </Pressable>
+  </Link>)
+
+  const searchLink = (<Link href="/(tabs)/search" asChild>
+    <Pressable>
+      {({ pressed }) => (
+        <FontAwesome
+          name="search"
           size={25}
           color={Colors[colorScheme ?? 'light'].text}
           style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }} />
@@ -51,8 +63,7 @@ export default function TabLayout() {
         options={{
           title: 'Marketplace',
           tabBarIcon: ({ color }) => <TabBarIcon name="shopping-cart" color={color} />,
-          headerShown: false,
-          // header: () => (<TextInput placeholder="Search for products." placeholderTextColor="#999"/>),
+          headerRight: () => searchLink,
         }}
       />
       <Tabs.Screen
@@ -76,6 +87,22 @@ export default function TabLayout() {
         options={{
           href: null,
           title: 'Notifications',
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="search"
+        options={{
+          href: null,
+          title: 'Search',
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="post-listing"
+        options={{
+          href: null,
+          title: 'Post Listing',
           headerShown: false,
         }}
       />

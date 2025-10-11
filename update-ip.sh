@@ -22,13 +22,14 @@ if [ ! -f "$IP_CONFIG_FILE" ]; then
 fi
 
 # Backup the original file
-cp "$IP_CONFIG_FILE" "$IP_CONFIG_FILE.backup"
+# cp "$IP_CONFIG_FILE" "$IP_CONFIG_FILE.backup"
 
 # Update IP in the file using sed
-sed -i '' "s/return '[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+';/return '${CURRENT_IP}';/" "$IP_CONFIG_FILE"
+# This pattern matches the specific line with the AUTO_IP_MARKER comment
+sed -i '' "s/return '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*';/return '${CURRENT_IP}';/" "$IP_CONFIG_FILE"
 
 echo "✅ Updated IP configuration with IP: $CURRENT_IP"
-echo "💾 Backup saved as: $IP_CONFIG_FILE.backup"
+# echo "💾 Backup saved as: $IP_CONFIG_FILE.backup"
 
 # Test the connection
 echo "🧪 Testing connection..."

@@ -1,7 +1,10 @@
 import { useAuth } from '@/components/auth/AuthContext';
 import { Text, View } from '@/components/Themed';
-import React, { useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { Category } from '@/services/api';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 
 // Mock data for marketplace items (replace with real API data later)
 const mockMarketplaceItems = [
@@ -120,8 +123,46 @@ interface LookingItem {
 type TabType = 'explore' | 'looking' | 'selling';
 
 export default function MarketplaceScreen() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('explore');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+
+  // Fetch categories when component mounts and user is authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchCategories();
+    }
+  }, [isAuthenticated]);
+
+  const fetchCategories = async () => {
+    // try {
+    //   setIsLoadingCategories(true);
+    //   setCategoriesError(null);
+
+    //   const categoriesData = await authAPI.getCategories();
+    //   setCategories(categoriesData);
+    // } catch (error) {
+    //   console.error('Error fetching categories:', error);
+    //   setCategoriesError('Failed to load categories');
+    //   // Fallback to default categories if API fails
+      setCategories([
+        { id: 'pokemon', name: 'Pokemon', created_at: '', updated_at: '' },
+        { id: 'yugioh', name: 'Yu-Gi-Oh!', created_at: '', updated_at: '' },
+        { id: 'magic', name: 'Magic: The Gathering', created_at: '', updated_at: '' },
+      ]);
+    // } finally {
+      setIsLoadingCategories(false);
+    // }
+  };
+
+  const handleCategoryPress = (category: Category) => {
+    // TODO: Navigate to category-specific listings or filter current listings
+    console.log('Selected category:', category.name);
+    // You can implement navigation or filtering logic here
+    // router.push(`/category/${category.id}`);
+  };
 
   const renderMarketplaceItem = ({ item }: { item: MarketplaceItem }) => (
     <TouchableOpacity style={styles.itemCard}>
@@ -210,31 +251,31 @@ export default function MarketplaceScreen() {
       case 'explore':
         return (
           <>
-            <View style={styles.searchSection}>
-              <TouchableOpacity style={styles.searchButton}>
-                <Text style={styles.searchButtonText}>🔍 Search Cards</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.filterButton}>
-                <Text style={styles.filterButtonText}>🔧 Filters</Text>
-              </TouchableOpacity>
-            </View>
-
             <View style={styles.categoriesSection}>
               <Text style={styles.sectionTitle}>Popular Categories</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
-                <TouchableOpacity style={styles.categoryChip}>
-                  <Text style={styles.categoryText}>Pokemon</Text>
+              {isLoadingCategories ? (
+                <View style={styles.categoriesLoading}>
+                  <ActivityIndicator size="small" color="#007AFF" />
+                  <Text style={styles.loadingText}>Loading categories...</Text>
+                </View>
+              ) : categoriesError ? (
+                <TouchableOpacity style={styles.retryContainer} onPress={fetchCategories}>
+                  <Text style={styles.errorText}>Failed to load categories</Text>
+                  <Text style={styles.retryText}>Tap to retry</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.categoryChip}>
-                  <Text style={styles.categoryText}>Yu-Gi-Oh!</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.categoryChip}>
-                  <Text style={styles.categoryText}>Magic: The Gathering</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.categoryChip}>
-                  <Text style={styles.categoryText}>Dragon Ball Super</Text>
-                </TouchableOpacity>
-              </ScrollView>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
+                  {categories.map((category) => (
+                    <TouchableOpacity
+                      key={category.id}
+                      style={styles.categoryChip}
+                      onPress={() => handleCategoryPress(category)}
+                    >
+                      <Text style={styles.categoryText}>{category.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
             </View>
 
             <View style={styles.marketplaceSection}>
@@ -341,6 +382,15 @@ export default function MarketplaceScreen() {
       <View style={styles.tabContent}>
         {renderTabContent()}
       </View>
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push('/post-listing')}
+        activeOpacity={0.8}
+      >
+        <FontAwesome name="plus" size={24} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -676,5 +726,52 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     textAlign: 'center',
+  },
+  // Floating Action Button
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  // Categories Loading States
+  categoriesLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  loadingText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#666',
+  },
+  retryContainer: {
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#FF3B30',
+    marginBottom: 4,
+  },
+  retryText: {
+    fontSize: 12,
+    color: '#007AFF',
+    textDecorationLine: 'underline',
   },
 });
