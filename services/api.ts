@@ -16,6 +16,18 @@ console.log('  __DEV__:', __DEV__);
 console.log('  Dynamic IP:', getDevServerIP());
 console.log('  API_BASE_URL:', API_BASE_URL);
 
+// Test network connectivity
+if (__DEV__) {
+  fetch(`${API_BASE_URL}/health`)
+    .then(response => {
+      console.log('✅ Network connectivity test successful:', response.status);
+    })
+    .catch(error => {
+      console.log('❌ Network connectivity test failed:', error.message);
+      console.log('💡 Make sure Rails server is running with: bin/rails server -b 0.0.0.0');
+    });
+}
+
 // Create axios instance
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -64,6 +76,13 @@ export interface AuthResponse {
 export interface ApiError {
   message: string;
   errors?: Record<string, string[]>;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // Token management
@@ -251,6 +270,25 @@ export const authAPI = {
   async getCurrentUser(): Promise<User> {
     const response = await api.get('/sessions');
     return response.data.user;
+  },
+
+  async getCategories(): Promise<Category[]> {
+    try {
+      console.log('🔵 Fetching categories from:', api.defaults.baseURL + '/categories');
+      const response = await api.get('/categories');
+      console.log('✅ Categories fetched successfully:', response.data.length, 'categories');
+      return response.data;
+    } catch (error: any) {
+      console.log('❌ Categories fetch failed:', error.message);
+      if (error.code === 'NETWORK_ERROR' || error.message.includes('ERR_ADDRESS_UNREACHABLE')) {
+        console.log('💡 Network issue - check if Rails server is running with: bin/rails server -b 0.0.0.0');
+      }
+      const apiError: ApiError = {
+        message: error.response?.data?.message || error.response?.data?.error || 'Failed to fetch categories',
+        errors: error.response?.data || {},
+      };
+      throw apiError;
+    }
   },
 };
 
