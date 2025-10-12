@@ -1,4 +1,5 @@
 import { Text, View } from '@/components/Themed';
+import { authAPI } from '@/services/api';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -6,38 +7,39 @@ import React, { useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
-  Image,
   Platform,
   ScrollView,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
+  TouchableOpacity
 } from 'react-native';
 
 interface ListingForm {
-  title: string;
+  item_title: string;
   description: string;
   price: string;
   condition: string;
-  category: string;
-  images: string[];
-  listingType: 'selling' | 'looking';
+  category_id: string;
+  card_set_id: string;
+  // images: string[];
+  listing_type: 'selling' | 'looking';
 }
 
-const CONDITIONS = ['Mint', 'Near Mint', 'Excellent', 'Good', 'Light Played', 'Played', 'Poor'];
+const CONDITIONS = ['Any', 'Mint', 'Near Mint', 'Excellent', 'Good', 'Light Played', 'Played', 'Poor'];
 const CATEGORIES = ['Pokemon', 'Magic: The Gathering', 'Yu-Gi-Oh!', 'Lorcana', 'One Piece'];
 
 export default function PostListingScreen() {
   const { tab } = useLocalSearchParams<{ tab?: string }>();
 
   const [form, setForm] = useState<ListingForm>({
-    title: '',
+    item_title: '',
     description: '',
     price: '',
-    condition: 'Near Mint',
-    category: 'Pokemon',
-    images: [],
-    listingType: (tab as 'selling' | 'looking') || 'selling',
+    condition: 'Any',
+    category_id: 'pokemon',
+    card_set_id: 'base1',
+    // images: [],
+    listing_type: (tab as 'selling' | 'looking') || 'selling',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -51,17 +53,17 @@ export default function PostListingScreen() {
           {
             text: 'Discard',
             style: 'destructive',
-            onPress: () => router.push(`/(tabs)/marketplace?tab=${form.listingType}`)
+            onPress: () => router.push(`/(tabs)/marketplace?tab=${form.listing_type}`)
           },
         ]
       );
     } else {
-      router.push(`/(tabs)/marketplace?tab=${form.listingType}`);
+      router.push(`/(tabs)/marketplace?tab=${form.listing_type}`);
     }
   };
 
   const hasUnsavedChanges = () => {
-    return form.title.trim() || form.description.trim() || form.price.trim();
+    return form.item_title.trim() || form.description.trim() || form.price.trim();
   };
 
   const handleSubmit = async () => {
@@ -69,13 +71,51 @@ export default function PostListingScreen() {
 
     setIsSubmitting(true);
     try {
-      // TODO: Implement API call to create listing
-      console.log('Creating listing:', form);
+      // Convert form fields to ListingRequest format
+      // Map condition to allowed ListingRequest type
+      const allowedConditions = [
+        'any',
+        'mint',
+        'near_mint',
+        'excellent',
+        'good',
+        'light_played',
+        'played',
+        'poor'
+      ] as const;
 
+      const normalizedCondition = form.condition.toLowerCase().replace(/\s/g, '_');
+      const condition =
+        allowedConditions.includes(normalizedCondition as typeof allowedConditions[number])
+          ? (normalizedCondition as typeof allowedConditions[number])
+          : 'near_mint';
+
+      const listingRequest = {
+        item_title: form.item_title,
+        description: form.description,
+        price: form.price,
+        listing_type: form.listing_type,
+        condition,
+        category_id: form.category_id,
+        card_set_id: form.card_set_id,
+      };
+
+      await authAPI.createListing(listingRequest);
+      console.log('Creating listing:', listingRequest);
+      //  reset form
+      setForm({
+        item_title: '',
+        description: '',
+        price: '',
+        condition: 'Any',
+        category_id: 'pokemon',
+        card_set_id: 'base1',
+        listing_type: (tab as 'selling' | 'looking') || 'selling',
+      });
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // await new Promise(resolve => setTimeout(resolve, 2000));
 
-      const successMessage = form.listingType === 'selling'
+      const successMessage = form.listing_type === 'selling'
         ? 'Your item has been listed for sale successfully!'
         : 'Your wanted item request has been posted successfully!';
 
@@ -84,7 +124,7 @@ export default function PostListingScreen() {
         successMessage,
         [{
           text: 'OK',
-          onPress: () => router.push(`/(tabs)/marketplace?tab=${form.listingType}`)
+          onPress: () => router.push(`/(tabs)/marketplace?tab=${form.listing_type}`)
         }]
       );
     } catch (error) {
@@ -95,20 +135,20 @@ export default function PostListingScreen() {
   };
 
   const validateForm = () => {
-    if (!form.title.trim()) {
-      Alert.alert('Error', 'Please enter a title for your listing.');
+    if (!form.item_title.trim()) {
+      Alert.alert('Error', 'Please enter a item_title for your listing.');
       return false;
     }
-    if (form.listingType === 'selling') {
+    if (form.listing_type === 'selling') {
       if (!form.price.trim() || isNaN(Number(form.price))) {
         Alert.alert('Error', 'Please enter a valid price.');
         return false;
       }
     }
-    if (!form.description.trim()) {
-      Alert.alert('Error', 'Please enter a description.');
-      return false;
-    }
+    // if (!form.description.trim()) {
+    //   Alert.alert('Error', 'Please enter a description.');
+    //   return false;
+    // }
     return true;
   };
 
@@ -164,11 +204,11 @@ export default function PostListingScreen() {
   };
 
   const toggleListingType = (type: 'selling' | 'looking') => {
-    setForm(prev => ({ ...prev, listingType: type }));
+    setForm(prev => ({ ...prev, listing_type: type }));
   };
 
   const getPlaceholderText = () => {
-    if (form.listingType === 'selling') {
+    if (form.listing_type === 'selling') {
       return 'e.g., Charizard Base Set Shadowless PSA 9';
     } else {
       return 'e.g., Looking for Charizard Base Set Shadowless';
@@ -176,7 +216,7 @@ export default function PostListingScreen() {
   };
 
   const getDescriptionPlaceholder = () => {
-    if (form.listingType === 'selling') {
+    if (form.listing_type === 'selling') {
       return "Describe the card's condition, any flaws, and why it's special...";
     } else {
       return "Describe what you're looking for, preferred condition, and any specific details...";
@@ -191,19 +231,19 @@ export default function PostListingScreen() {
           <FontAwesome name="times" size={20} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {form.listingType === 'selling' ? 'Post for Sale' : 'Post Looking For'}
+          {form.listing_type === 'selling' ? 'Post for Sale' : 'Post Looking For'}
         </Text>
         <TouchableOpacity
           style={[
             styles.postButton,
-            (!form.title.trim() || (form.listingType === 'selling' && !form.price.trim())) && styles.postButtonDisabled
+            (!form.item_title.trim() || (form.listing_type === 'selling' && !form.price.trim())) && styles.postButtonDisabled
           ]}
           onPress={handleSubmit}
-          disabled={isSubmitting || !form.title.trim() || (form.listingType === 'selling' && !form.price.trim())}
+          disabled={isSubmitting || !form.item_title.trim() || (form.listing_type === 'selling' && !form.price.trim())}
         >
           <Text style={[
             styles.postButtonText,
-            (!form.title.trim() || (form.listingType === 'selling' && !form.price.trim())) && styles.postButtonTextDisabled
+            (!form.item_title.trim() || (form.listing_type === 'selling' && !form.price.trim())) && styles.postButtonTextDisabled
           ]}>
             {isSubmitting ? 'Posting...' : 'Post'}
           </Text>
@@ -219,19 +259,19 @@ export default function PostListingScreen() {
               style={[
                 styles.toggleButton,
                 styles.toggleButtonLeft,
-                form.listingType === 'selling' && styles.toggleButtonActive
+                form.listing_type === 'selling' && styles.toggleButtonActive
               ]}
               onPress={() => toggleListingType('selling')}
             >
               <FontAwesome
                 name="tag"
                 size={16}
-                color={form.listingType === 'selling' ? '#fff' : '#666'}
+                color={form.listing_type === 'selling' ? '#fff' : '#666'}
                 style={styles.toggleIcon}
               />
               <Text style={[
                 styles.toggleButtonText,
-                form.listingType === 'selling' && styles.toggleButtonTextActive
+                form.listing_type === 'selling' && styles.toggleButtonTextActive
               ]}>
                 Selling
               </Text>
@@ -240,19 +280,19 @@ export default function PostListingScreen() {
               style={[
                 styles.toggleButton,
                 styles.toggleButtonRight,
-                form.listingType === 'looking' && styles.toggleButtonActive
+                form.listing_type === 'looking' && styles.toggleButtonActive
               ]}
               onPress={() => toggleListingType('looking')}
             >
               <FontAwesome
                 name="search"
                 size={16}
-                color={form.listingType === 'looking' ? '#fff' : '#666'}
+                color={form.listing_type === 'looking' ? '#fff' : '#666'}
                 style={styles.toggleIcon}
               />
               <Text style={[
                 styles.toggleButtonText,
-                form.listingType === 'looking' && styles.toggleButtonTextActive
+                form.listing_type === 'looking' && styles.toggleButtonTextActive
               ]}>
                 Looking For
               </Text>
@@ -261,7 +301,7 @@ export default function PostListingScreen() {
         </View>
 
         {/* Photos Section - Only for selling */}
-        {form.listingType === 'selling' && (
+        {form.listing_type === 'selling' && (
           <View style={styles.section}>
           <Text style={styles.sectionTitle}>Photos</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosContainer}>
@@ -269,14 +309,14 @@ export default function PostListingScreen() {
               <FontAwesome name="camera" size={24} color="#666" />
               <Text style={styles.addPhotoText}>Add Photo</Text>
             </TouchableOpacity>
-            {form.images.map((image, index) => (
+            {/* {form.images.map((image, index) => (
               <View key={index} style={styles.photoItem}>
                 <Image source={{ uri: image }} style={styles.photoImage} />
                 <TouchableOpacity style={styles.removePhotoButton}>
                   <FontAwesome name="times" size={12} color="#fff" />
                 </TouchableOpacity>
               </View>
-            ))}
+            ))} */}
           </ScrollView>
         </View>
         )}
@@ -284,24 +324,24 @@ export default function PostListingScreen() {
         {/* Title */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            {form.listingType === 'selling' ? 'Item Title *' : 'What are you looking for? *'}
+            {form.listing_type === 'selling' ? 'Item Title *' : 'What are you looking for? *'}
           </Text>
           <TextInput
             style={styles.textInput}
             placeholder={getPlaceholderText()}
             placeholderTextColor="#999"
-            value={form.title}
-            onChangeText={(text) => setForm(prev => ({ ...prev, title: text }))}
+            value={form.item_title}
+            onChangeText={(text) => setForm(prev => ({ ...prev, item_title: text }))}
             maxLength={100}
           />
-          <Text style={styles.characterCount}>{form.title.length}/100</Text>
+          <Text style={styles.characterCount}>{form.item_title.length}/100</Text>
         </View>
 
         {/* Category */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Category</Text>
           <TouchableOpacity style={styles.selectButton} onPress={selectCategory}>
-            <Text style={styles.selectButtonText}>{form.category}</Text>
+            <Text style={styles.selectButtonText}>{form.category_id}</Text>
             <FontAwesome name="chevron-down" size={14} color="#666" />
           </TouchableOpacity>
         </View>
@@ -309,7 +349,7 @@ export default function PostListingScreen() {
         {/* Condition - Only for selling or when specific condition is wanted */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            {form.listingType === 'selling' ? 'Condition' : 'Preferred Condition'}
+            {form.listing_type === 'selling' ? 'Condition' : 'Preferred Condition'}
           </Text>
           <TouchableOpacity style={styles.selectButton} onPress={selectCondition}>
             <Text style={styles.selectButtonText}>{form.condition}</Text>
@@ -318,7 +358,7 @@ export default function PostListingScreen() {
         </View>
 
         {/* Price - Only for selling */}
-        {form.listingType === 'selling' && (
+        {form.listing_type === 'selling' && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Price *</Text>
             <View style={styles.priceContainer}>
@@ -337,7 +377,7 @@ export default function PostListingScreen() {
         )}
 
         {/* Budget Range - Only for looking */}
-        {form.listingType === 'looking' && (
+        {form.listing_type === 'looking' && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Budget Range (Optional)</Text>
             <View style={styles.priceContainer}>
@@ -356,7 +396,7 @@ export default function PostListingScreen() {
 
         {/* Description */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Description *</Text>
+          <Text style={styles.sectionTitle}>Description</Text>
           <TextInput
             style={[styles.textInput, styles.descriptionInput]}
             placeholder={getDescriptionPlaceholder()}
@@ -373,9 +413,9 @@ export default function PostListingScreen() {
         {/* Tips Section */}
         <View style={[styles.section, styles.tipsSection]}>
           <Text style={styles.tipsTitle}>
-            💡 Tips for better {form.listingType === 'selling' ? 'listings' : 'requests'}
+            💡 Tips for better {form.listing_type === 'selling' ? 'listings' : 'requests'}
           </Text>
-          {form.listingType === 'selling' ? (
+          {form.listing_type === 'selling' ? (
             <>
               <Text style={styles.tipText}>• Take clear, well-lit photos from multiple angles</Text>
               <Text style={styles.tipText}>• Be honest about condition and any flaws</Text>

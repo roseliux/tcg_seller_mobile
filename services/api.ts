@@ -85,6 +85,30 @@ export interface Category {
   updated_at: string;
 }
 
+export interface ListingRequest {
+  item_title: string;
+  description: string;
+  price: string;
+  listing_type: 'selling' | 'looking';
+  condition: 'any' | 'mint' | 'near_mint' | 'excellent' | 'good' | 'light_played' | 'played' | 'poor';
+  category_id: string;
+  card_set_id: string;
+}
+
+export interface ListingResponse {
+  id: number;
+  item_title: string;
+  description: string;
+  price: string;
+  listing_type: 'selling' | 'looking';
+  condition: 'any' | 'mint' | 'near_mint' | 'excellent' | 'good' | 'light_played' | 'played' | 'poor';
+  user_id: number;
+  category_id: string;
+  card_set_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Token management
 export const TokenManager = {
   async getToken(): Promise<string | null> {
@@ -285,6 +309,25 @@ export const authAPI = {
       }
       const apiError: ApiError = {
         message: error.response?.data?.message || error.response?.data?.error || 'Failed to fetch categories',
+        errors: error.response?.data || {},
+      };
+      throw apiError;
+    }
+  },
+
+  async createListing(data: ListingRequest): Promise<ListingResponse> {
+    try {
+      console.log('🔵 Creating listing:', data);
+      const response = await api.post('/listings', data);
+      console.log('✅ Listing created successfully:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.log('❌ Listing creation failed:', error.message);
+      if (error.code === 'NETWORK_ERROR' || error.message.includes('ERR_ADDRESS_UNREACHABLE')) {
+        console.log('💡 Network issue - check if Rails server is running with: bin/rails server -b 0.0.0.0');
+      }
+      const apiError: ApiError = {
+        message: error.response?.data?.message || error.response?.data?.error || 'Failed to create listing',
         errors: error.response?.data || {},
       };
       throw apiError;
