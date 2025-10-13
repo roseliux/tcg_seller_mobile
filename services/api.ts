@@ -102,6 +102,7 @@ export interface ListingResponse {
   price: string;
   listing_type: 'selling' | 'looking';
   condition: 'any' | 'mint' | 'near_mint' | 'excellent' | 'good' | 'light_played' | 'played' | 'poor';
+  status: 'active' | 'deactivated' | 'sold' | 'found';
   user_id: number;
   category_id: string;
   card_set_id: string;

@@ -127,6 +127,7 @@ interface ListingItem {
   price: string;
   listing_type: 'selling' | 'looking';
   condition: 'any' | 'mint' | 'near_mint' | 'excellent' | 'good' | 'light_played' | 'played' | 'poor';
+  status: 'active' | 'deactivated' | 'sold' | 'found';
   user_id: number;
   category_id: string;
   card_set_id: string;
@@ -223,7 +224,7 @@ export default function MarketplaceScreen() {
       </View>
 
       <TouchableOpacity style={styles.buyButton}>
-        <Text style={styles.buyButtonText}>Add to Cart</Text>
+        <Text style={styles.buyButtonText}>Claim</Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -233,18 +234,18 @@ export default function MarketplaceScreen() {
       <View style={styles.itemHeader}>
         <Text style={styles.itemName}>{item.item_title}</Text>
         <View style={styles.priceStatusContainer}>
-          <Text style={styles.itemPrice}>{item.price}</Text>
-          {/* <Text style={[styles.statusBadge,
-            item.status === 'Active' ? styles.statusActive :
-            item.status === 'Sold' ? styles.statusSold : styles.statusPending
+          <Text style={styles.itemPrice}>$ {item.price}</Text>
+          <Text style={[styles.statusBadge,
+            item.status === 'active' ? styles.statusActive :
+            item.status === 'sold' ? styles.statusSold : styles.statusPending
           ]}>
             {item.status}
-          </Text> */}
+          </Text>
         </View>
       </View>
 
       <View style={styles.itemDetails}>
-        {/* <Text style={styles.itemSet}>Set: {item.card_set_id}</Text> */}
+        <Text style={styles.itemSet}>Set: {item.card_set_id}</Text>
         {/* <Text style={styles.itemRarity}>Rarity: {item.rarity}</Text> */}
         <Text style={styles.itemCondition}>Condition: {item.condition}</Text>
         {/* <Text style={styles.itemViews}>👁 {item.views} views</Text> */}
@@ -254,9 +255,9 @@ export default function MarketplaceScreen() {
         <TouchableOpacity style={styles.editButton}>
           <Text style={styles.editButtonText}>Edit</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.promoteButton}>
+        {/* <TouchableOpacity style={styles.promoteButton}>
           <Text style={styles.promoteButtonText}>Promote</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     </TouchableOpacity>
   );
@@ -265,12 +266,12 @@ export default function MarketplaceScreen() {
     <TouchableOpacity style={styles.itemCard}>
       <View style={styles.itemHeader}>
         <Text style={styles.itemName}>{item.item_title}</Text>
-        {/* <Text style={[styles.priorityBadge,
-          item.priority === 'High' ? styles.priorityHigh :
-          item.priority === 'Medium' ? styles.priorityMedium : styles.priorityLow
+        <Text style={[styles.priorityBadge,
+          item.status === 'active' ? styles.statusActive :
+          item.status === 'found' ? styles.statusSold : styles.statusPending
         ]}>
-          {item.priority}
-        </Text> */}
+          {item.status}
+        </Text>
       </View>
 
       <View style={styles.itemDetails}>
@@ -280,9 +281,9 @@ export default function MarketplaceScreen() {
       </View>
 
       <View style={styles.lookingActions}>
-        <TouchableOpacity style={styles.alertButton}>
+        {/* <TouchableOpacity style={styles.alertButton}>
           <Text style={styles.alertButtonText}>🔔 Set Alert</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         <TouchableOpacity style={styles.searchButton}>
           <Text style={styles.searchButtonText}>🔍 Search Now</Text>
         </TouchableOpacity>
