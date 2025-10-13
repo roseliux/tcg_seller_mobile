@@ -333,6 +333,17 @@ export const authAPI = {
       throw apiError;
     }
   },
+
+  async getSellingItems(): Promise<ListingResponse[]> {
+    const response = await api.get('/listings?listing_type=selling');
+    return response.data;
+  },
+
+  async getLookingItems(): Promise<ListingResponse[]> {
+    const response = await api.get('/listings?listing_type=looking');
+    return response.data;
+  },
+
 };
 
 export default api;

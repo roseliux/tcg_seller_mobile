@@ -1,8 +1,8 @@
 import { useAuth } from '@/components/auth/AuthContext';
 import { Text, View } from '@/components/Themed';
-import { Category } from '@/services/api';
+import { authAPI, Category } from '@/services/api';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 
@@ -120,6 +120,20 @@ interface LookingItem {
   priority: 'High' | 'Medium' | 'Low';
 }
 
+interface ListingItem {
+  id: number;
+  item_title: string;
+  description: string;
+  price: string;
+  listing_type: 'selling' | 'looking';
+  condition: 'any' | 'mint' | 'near_mint' | 'excellent' | 'good' | 'light_played' | 'played' | 'poor';
+  user_id: number;
+  category_id: string;
+  card_set_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
 type TabType = 'explore' | 'looking' | 'selling';
 
 export default function MarketplaceScreen() {
@@ -128,13 +142,25 @@ export default function MarketplaceScreen() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
+  const [lookingItems, setLookingItems] = useState<ListingItem[]>([]);
+  const [sellingItems, setSellingItems] = useState<ListingItem[]>([]);
+  const { tab, refresh } = useLocalSearchParams<{ tab?: string; refresh?: string }>();
+
 
   // Fetch categories when component mounts and user is authenticated
   useEffect(() => {
     if (isAuthenticated) {
       fetchCategories();
+      fetchLookingItems();
+      fetchSellingItems();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, tab, refresh]);
+
+    useEffect(() => {
+      if (tab && ['explore', 'selling', 'looking'].includes(tab)) {
+        setActiveTab(tab as TabType);
+      }
+    }, [tab]);
 
   const fetchCategories = async () => {
     // try {
@@ -155,6 +181,24 @@ export default function MarketplaceScreen() {
     // } finally {
       setIsLoadingCategories(false);
     // }
+  };
+
+  const fetchSellingItems = async () => {
+    try {
+      const sellingItemsData = await authAPI.getSellingItems();
+      setSellingItems(sellingItemsData);
+    } catch (error) {
+      console.error('Error fetching selling items:', error);
+    }
+  };
+
+    const fetchLookingItems = async () => {
+    try {
+      const lookingItemsData = await authAPI.getLookingItems();
+      setLookingItems(lookingItemsData);
+    } catch (error) {
+      console.error('Error fetching looking items:', error);
+    }
   };
 
   const handleCategoryPress = (category: Category) => {
@@ -184,26 +228,26 @@ export default function MarketplaceScreen() {
     </TouchableOpacity>
   );
 
-  const renderSellingItem = ({ item }: { item: SellingItem }) => (
+  const renderSellingItem = ({ item }: { item: ListingItem }) => (
     <TouchableOpacity style={styles.itemCard}>
       <View style={styles.itemHeader}>
-        <Text style={styles.itemName}>{item.name}</Text>
+        <Text style={styles.itemName}>{item.item_title}</Text>
         <View style={styles.priceStatusContainer}>
           <Text style={styles.itemPrice}>{item.price}</Text>
-          <Text style={[styles.statusBadge,
+          {/* <Text style={[styles.statusBadge,
             item.status === 'Active' ? styles.statusActive :
             item.status === 'Sold' ? styles.statusSold : styles.statusPending
           ]}>
             {item.status}
-          </Text>
+          </Text> */}
         </View>
       </View>
 
       <View style={styles.itemDetails}>
-        <Text style={styles.itemSet}>Set: {item.set}</Text>
-        <Text style={styles.itemRarity}>Rarity: {item.rarity}</Text>
+        {/* <Text style={styles.itemSet}>Set: {item.card_set_id}</Text> */}
+        {/* <Text style={styles.itemRarity}>Rarity: {item.rarity}</Text> */}
         <Text style={styles.itemCondition}>Condition: {item.condition}</Text>
-        <Text style={styles.itemViews}>👁 {item.views} views</Text>
+        {/* <Text style={styles.itemViews}>👁 {item.views} views</Text> */}
       </View>
 
       <View style={styles.sellingActions}>
@@ -217,22 +261,22 @@ export default function MarketplaceScreen() {
     </TouchableOpacity>
   );
 
-  const renderLookingItem = ({ item }: { item: LookingItem }) => (
+  const renderLookingItem = ({ item }: { item: ListingItem }) => (
     <TouchableOpacity style={styles.itemCard}>
       <View style={styles.itemHeader}>
-        <Text style={styles.itemName}>{item.name}</Text>
-        <Text style={[styles.priorityBadge,
+        <Text style={styles.itemName}>{item.item_title}</Text>
+        {/* <Text style={[styles.priorityBadge,
           item.priority === 'High' ? styles.priorityHigh :
           item.priority === 'Medium' ? styles.priorityMedium : styles.priorityLow
         ]}>
           {item.priority}
-        </Text>
+        </Text> */}
       </View>
 
       <View style={styles.itemDetails}>
-        <Text style={styles.itemSet}>Set: {item.set}</Text>
-        <Text style={styles.maxPrice}>Max Price: {item.maxPrice}</Text>
-        <Text style={styles.itemCondition}>Condition: {item.condition}</Text>
+        <Text style={styles.itemSet}>Set: {item.card_set_id}</Text>
+        <Text style={styles.maxPrice}>Max Price: {item.price}</Text>
+        {/* <Text style={styles.itemCondition}>Condition: {item.condition}</Text> */}
       </View>
 
       <View style={styles.lookingActions}>
@@ -283,7 +327,7 @@ export default function MarketplaceScreen() {
               <FlatList
                 data={mockMarketplaceItems}
                 renderItem={renderMarketplaceItem}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item) => String(item.id)}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.marketplaceList}
               />
@@ -296,14 +340,14 @@ export default function MarketplaceScreen() {
           <View style={styles.marketplaceSection}>
             <View style={styles.sellingHeader}>
               <Text style={styles.sectionTitle}>Your Listings</Text>
-              <TouchableOpacity style={styles.addListingButton}>
-                <Text style={styles.addListingButtonText}>+ Add New</Text>
-              </TouchableOpacity>
+              {/* <TouchableOpacity style={styles.addListingButton}> */}
+                {/* <Text style={styles.addListingButtonText}>+ Add New</Text> */}
+              {/* </TouchableOpacity> */}
             </View>
             <FlatList
-              data={mockSellingItems}
+              data={sellingItems}
               renderItem={renderSellingItem}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item) => String(item.id)}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.marketplaceList}
               ListEmptyComponent={
@@ -321,14 +365,14 @@ export default function MarketplaceScreen() {
           <View style={styles.marketplaceSection}>
             <View style={styles.lookingHeader}>
               <Text style={styles.sectionTitle}>Your Wishlist</Text>
-              <TouchableOpacity style={styles.addWishlistButton}>
-                <Text style={styles.addWishlistButtonText}>+ Add Card</Text>
-              </TouchableOpacity>
+              {/* <TouchableOpacity style={styles.addWishlistButton}> */}
+                {/* <Text style={styles.addWishlistButtonText}>+ Add Card</Text> */}
+              {/* </TouchableOpacity> */}
             </View>
             <FlatList
-              data={mockLookingItems}
+              data={lookingItems}
               renderItem={renderLookingItem}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item) => String(item.id)}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.marketplaceList}
               ListEmptyComponent={
@@ -342,7 +386,6 @@ export default function MarketplaceScreen() {
         );
 
       default:
-        return null;
     }
   };
 

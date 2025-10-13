@@ -99,7 +99,7 @@ export default function PostListingScreen() {
         category_id: form.category_id,
         card_set_id: form.card_set_id,
       };
-
+      const submittedType = form.listing_type; // Save before resetting form
       await authAPI.createListing(listingRequest);
       console.log('Creating listing:', listingRequest);
       //  reset form
@@ -124,7 +124,7 @@ export default function PostListingScreen() {
         successMessage,
         [{
           text: 'OK',
-          onPress: () => router.push(`/(tabs)/marketplace?tab=${form.listing_type}`)
+          onPress: () => router.push(`/(tabs)/marketplace?tab=${submittedType}&refresh=1`)
         }]
       );
     } catch (error) {
