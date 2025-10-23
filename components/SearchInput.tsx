@@ -1,14 +1,6 @@
-import SearchInput from '@/components/SearchInput';
-import { Text, View } from '@/components/Themed';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { router } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
-import {
-  Platform,
-  StyleSheet,
-  TouchableOpacity
-} from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 interface SearchResult {
   id: string;
@@ -16,16 +8,11 @@ interface SearchResult {
   type: 'card' | 'set' | 'category';
 }
 
-export default function SearchScreen() {
+export default function SearchInput() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
-
-  const handleBackPress = () => {
-    // Navigate specifically to marketplace instead of using router.back()
-    router.push('/(tabs)/marketplace');
-  };
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) {
@@ -39,21 +26,17 @@ export default function SearchScreen() {
 
     try {
       // TODO: Replace with actual API calls to your Rails backend
-      // Simulated search results for now
-      const mockResults: SearchResult[] = [
-        { id: '1', name: 'Charizard Base Set', type: 'card' as const },
-        { id: '2', name: 'Pokemon Base Set', type: 'set' as const },
-        { id: '3', name: 'Magic: The Gathering', type: 'category' as const },
-      ].filter(item =>
-        item.name.toLowerCase().includes(query.toLowerCase())
-      );
+    //   const mockResults: SearchResult[] = [
+    //     { id: '1', name: 'Charizard Base Set', type: 'card' },
+    //     { id: '2', name: 'Pokemon Base Set', type: 'set' },
+    //     { id: '3', name: 'Magic: The Gathering', type: 'category' },
+    //   ].filter(item =>
+    //     item.name.toLowerCase().includes(query.toLowerCase())
+    //   );
 
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      setSearchResults(mockResults);
+    //   await new Promise(resolve => setTimeout(resolve, 500));
+    //   setSearchResults(mockResults);
     } catch (error) {
-      console.error('Search error:', error);
       setSearchResults([]);
     } finally {
       setIsLoading(false);
@@ -88,61 +71,75 @@ export default function SearchScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      {/* Header with back button */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={handleBackPress}
-        >
-          <FontAwesome name="chevron-left" size={18} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Search</Text>
-        <View style={styles.headerSpacer} />
+    <View>
+      <View style={styles.searchSection}>
+        <View style={styles.searchContainer}>
+          <FontAwesome name="search" size={16} color="#666" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search cards, sets, or categories..."
+            placeholderTextColor="#999"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onSubmitEditing={handleSearchSubmit}
+            returnKeyType="search"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+              <FontAwesome name="times-circle" size={16} color="#999" />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
-      {/* Search Input Section */}
-     <SearchInput />
-
-      <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
+      {/* <View style={styles.resultsContainer}>
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#007AFF" />
+            <Text style={styles.loadingText}>Searching...</Text>
+          </View>
+        ) : hasSearched ? (
+          searchResults.length > 0 ? (
+            <FlatList
+              data={searchResults}
+              renderItem={renderSearchResult}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              ItemSeparatorComponent={() => <View style={styles.separator} />}
+            />
+          ) : (
+            <View style={styles.emptyContainer}>
+              <FontAwesome name="search" size={48} color="#ccc" />
+              <Text style={styles.emptyTitle}>No results found</Text>
+              <Text style={styles.emptySubtitle}>
+                Try adjusting your search terms or browse categories instead.
+              </Text>
+            </View>
+          )
+        ) : (
+          <View style={styles.placeholderContainer}>
+            <FontAwesome name="search" size={64} color="#e0e0e0" />
+            <Text style={styles.placeholderTitle}>Search TCG Marketplace</Text>
+            <Text style={styles.placeholderSubtitle}>
+              Find cards, sets, and categories from your favorite trading card games.
+            </Text>
+          </View>
+        )}
+      </View> */}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 60 : 20,
-    paddingBottom: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#e0e0e0',
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-    color: '#000',
-  },
-  headerSpacer: {
-    width: 34, // Same width as back button to center title
-  },
   searchSection: {
     paddingHorizontal: 16,
     paddingVertical: 16,
     backgroundColor: '#fff',
-    borderBottomWidth: 0.5,
+    // borderBottomWidth: 0.5,
     borderBottomColor: '#e0e0e0',
+    // paddingTop: 45,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -150,7 +147,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     borderRadius: 12,
     paddingHorizontal: 12,
-    marginBottom: 12,
+    // marginBottom: 12,
   },
   searchIcon: {
     marginRight: 8,

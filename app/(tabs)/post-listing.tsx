@@ -23,6 +23,7 @@ interface ListingForm {
   card_set_id: string;
   // images: string[];
   listing_type: 'selling' | 'looking';
+  card_location?: string;
 }
 
 const CONDITIONS = ['Any', 'Mint', 'Near Mint', 'Excellent', 'Good', 'Light Played', 'Played', 'Poor'];
@@ -40,6 +41,7 @@ export default function PostListingScreen() {
     card_set_id: 'base1',
     // images: [],
     listing_type: (tab as 'selling' | 'looking') || 'selling',
+    card_location: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -408,6 +410,19 @@ export default function PostListingScreen() {
             maxLength={500}
           />
           <Text style={styles.characterCount}>{form.description.length}/500</Text>
+        </View>
+
+        {/* Card Location */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Card Location*</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Enter card location (e.g. Hermosillo, Sonora)"
+            placeholderTextColor="#999"
+            value={form.card_location || ''}
+            onChangeText={(text) => setForm(prev => ({ ...prev, card_location: text }))}
+            maxLength={100}
+          />
         </View>
 
         {/* Tips Section */}

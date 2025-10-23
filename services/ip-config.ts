@@ -16,7 +16,7 @@ export function getDevServerIP(): string {
 
   // Fallback to current known IP (will be auto-updated by script)
   // AUTO_IP_MARKER: This line is automatically updated by update-ip.sh
-  return '192.168.68.115';
+  return '192.168.68.107';
 }
 
 const baseURL = `http://${getDevServerIP()}:3000`;
