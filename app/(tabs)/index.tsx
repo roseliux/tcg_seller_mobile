@@ -3,7 +3,7 @@ import SearchInput from '@/components/SearchInput';
 import { View } from '@/components/Themed';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useState } from 'react';
-import { Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
+import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
 
 // Example mock product results per category
 const categoryResults: Record<string, Array<{
@@ -65,11 +65,19 @@ export default function HomeScreen() {
   const [location, setLocation] = useState<string>('83224');
   const [modalVisible, setModalVisible] = useState(false);
   const [tempLocation, setTempLocation] = useState(location);
+  const [allState, setAllState] = useState(false);
+  const [allCountry, setAllCountry] = useState(false);
 
   const products = categoryResults[selectedCategory] || [];
 
   const handleLocationSave = () => {
-    setLocation(tempLocation);
+    if (allCountry) {
+      setLocation('País');
+    } else if (allState) {
+      setLocation('Estado');
+    } else {
+      setLocation(tempLocation);
+    }
     setModalVisible(false);
   };
 
@@ -83,8 +91,9 @@ export default function HomeScreen() {
         <TouchableOpacity
           style={styles.locationButton}
           onPress={() => setModalVisible(true)}
+          activeOpacity={0.8}
         >
-          <FontAwesome name="map-marker" size={20} color="#C77DFF" />
+          <FontAwesome name="map-marker" size={20} color="#C77DFF" style={{ marginRight: 6 }} />
           <Text style={styles.locationText}>{location}</Text>
         </TouchableOpacity>
       </View>
@@ -115,20 +124,49 @@ export default function HomeScreen() {
       {/* Location Modal */}
       <Modal
         visible={modalVisible}
-        animationType="slide"
+        animationType="fade"
         transparent
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Set your location</Text>
             <TextInput
               style={styles.modalInput}
               value={tempLocation}
               onChangeText={setTempLocation}
-              placeholder="Enter location or postal code"
+              placeholder="Enter postal code"
               autoFocus
+              editable={!allState && !allCountry}
             />
+            <View style={styles.modalCheckboxRow}>
+              <TouchableOpacity
+                style={styles.checkboxOption}
+                onPress={() => {
+                  setAllState(!allState);
+                  if (!allState) setAllCountry(false);
+                }}
+              >
+                <View style={[styles.checkbox, allState && styles.checkboxChecked]}>
+                  {allState && <FontAwesome name="check" size={14} color="#fff" />}
+                </View>
+                <Text style={styles.checkboxLabel}>Sonora</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.checkboxOption}
+                onPress={() => {
+                  setAllCountry(!allCountry);
+                  if (!allCountry) setAllState(false);
+                }}
+              >
+                <View style={[styles.checkbox, allCountry && styles.checkboxChecked]}>
+                  {allCountry && <FontAwesome name="check" size={14} color="#fff" />}
+                </View>
+                <Text style={styles.checkboxLabel}>En todo el País</Text>
+              </TouchableOpacity>
+            </View>
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalButton} onPress={() => setModalVisible(false)}>
                 <Text style={styles.modalButtonText}>Cancel</Text>
@@ -138,7 +176,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -269,6 +307,35 @@ locationText: {
     fontSize: 16,
     marginBottom: 20,
     backgroundColor: '#f8f8f8',
+  },
+  modalCheckboxRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  checkboxOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#C77DFF',
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  checkboxChecked: {
+    backgroundColor: '#C77DFF',
+    borderColor: '#C77DFF',
+  },
+  checkboxLabel: {
+    fontSize: 15,
+    color: '#333',
+    fontWeight: '500',
   },
   modalActions: {
     flexDirection: 'row',

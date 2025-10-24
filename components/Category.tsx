@@ -8,10 +8,10 @@ interface Category {
 
 const STATIC_CATEGORIES: Category[] = [
   { id: 'pokemon', name: 'Pokemon' },
+  { id: 'onepiece', name: 'One Piece' },
   { id: 'yugioh', name: 'Yu-Gi-Oh!' },
   { id: 'magic', name: 'Magic: The Gathering' },
   { id: 'lorcana', name: 'Lorcana' },
-  { id: 'onepiece', name: 'One Piece' },
 ];
 
 interface CategoryProps {
