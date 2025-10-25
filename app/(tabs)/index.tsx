@@ -1,9 +1,8 @@
-import Category from '@/components/Category';
-import SearchInput from '@/components/SearchInput';
+import SearchCategoryBar from '@/components/SearchCategoryBar';
 import { View } from '@/components/Themed';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { useState } from 'react';
-import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
+import { useNavigation } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text } from 'react-native';
 
 // Example mock product results per category
 const categoryResults: Record<string, Array<{
@@ -63,48 +62,29 @@ const categoryResults: Record<string, Array<{
 export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string>('pokemon');
   const [location, setLocation] = useState<string>('83224');
-  const [modalVisible, setModalVisible] = useState(false);
-  const [tempLocation, setTempLocation] = useState(location);
-  const [allState, setAllState] = useState(false);
-  const [allCountry, setAllCountry] = useState(false);
+
+
+  const navigation = useNavigation();
+  useEffect(() => {
+    navigation.setOptions({
+      headerTitle: 'Home',
+      header: () => (<SearchCategoryBar
+        selectedCategory={selectedCategory}
+        onCategorySelect={setSelectedCategory}
+        location={location}
+        setLocation={setLocation}
+      />),
+      // You can add other header options here
+    });
+  }, [navigation, selectedCategory, location]);
 
   const products = categoryResults[selectedCategory] || [];
 
-  const handleLocationSave = () => {
-    if (allCountry) {
-      setLocation('País');
-    } else if (allState) {
-      setLocation('Estado');
-    } else {
-      setLocation(tempLocation);
-    }
-    setModalVisible(false);
-  };
-
   return (
-    <View style={styles.headerWrapper}>
-      {/* Search input and location button in the same row */}
-      <View style={styles.searchRow}>
-        <View style={{ flex: 1 }}>
-          <SearchInput />
-        </View>
-        <TouchableOpacity
-          style={styles.locationButton}
-          onPress={() => setModalVisible(true)}
-          activeOpacity={0.8}
-        >
-          <FontAwesome name="map-marker" size={20} color="#C77DFF" style={{ marginRight: 6 }} />
-          <Text style={styles.locationText}>{location}</Text>
-        </TouchableOpacity>
-      </View>
-      <Category
-        onPress={(category) => setSelectedCategory(category.id)}
-        selectedCategory={selectedCategory}
-      />
-      <View style={styles.resultsWrapper}>
-        <ScrollView contentContainerStyle={styles.grid}>
+    <View style={styles.resultsWrapper}>
+      <ScrollView contentContainerStyle={styles.grid}>
           {products.length === 0 ? (
-            <Text style={styles.noResultsText}>No products found for this category.</Text>
+            <Text style={styles.noResultsText}>No products found for {selectedCategory} category.</Text>
           ) : (
             products.map((product) => (
               <View key={product.id} style={styles.card}>
@@ -119,78 +99,12 @@ export default function HomeScreen() {
               </View>
             ))
           )}
-        </ScrollView>
-      </View>
-      {/* Location Modal */}
-      <Modal
-        visible={modalVisible}
-        animationType="fade"
-        transparent
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Set your location</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={tempLocation}
-              onChangeText={setTempLocation}
-              placeholder="Enter postal code"
-              autoFocus
-              editable={!allState && !allCountry}
-            />
-            <View style={styles.modalCheckboxRow}>
-              <TouchableOpacity
-                style={styles.checkboxOption}
-                onPress={() => {
-                  setAllState(!allState);
-                  if (!allState) setAllCountry(false);
-                }}
-              >
-                <View style={[styles.checkbox, allState && styles.checkboxChecked]}>
-                  {allState && <FontAwesome name="check" size={14} color="#fff" />}
-                </View>
-                <Text style={styles.checkboxLabel}>Sonora</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.checkboxOption}
-                onPress={() => {
-                  setAllCountry(!allCountry);
-                  if (!allCountry) setAllState(false);
-                }}
-              >
-                <View style={[styles.checkbox, allCountry && styles.checkboxChecked]}>
-                  {allCountry && <FontAwesome name="check" size={14} color="#fff" />}
-                </View>
-                <Text style={styles.checkboxLabel}>En todo el País</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.modalButton} onPress={() => setModalVisible(false)}>
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalButton, styles.modalButtonPrimary]} onPress={handleLocationSave}>
-                <Text style={[styles.modalButtonText, styles.modalButtonPrimaryText]}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerWrapper: {
-    backgroundColor: '#fff',
-    paddingBottom: 4,
-    paddingHorizontal: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    flex: 1,
-  },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',

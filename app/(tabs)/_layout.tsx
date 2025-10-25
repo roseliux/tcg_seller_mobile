@@ -55,7 +55,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
-          headerRight: () => notificationsLink,
+          // header: () => <SearchCategoryBar />
         }}
       />
       <Tabs.Screen
@@ -63,7 +63,7 @@ export default function TabLayout() {
         options={{
           title: 'Marketplace',
           tabBarIcon: ({ color }) => <TabBarIcon name="shopping-cart" color={color} />,
-          headerRight: () => searchLink,
+          // headerRight: () => searchLink,
         }}
       />
       <Tabs.Screen

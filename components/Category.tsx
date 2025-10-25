@@ -45,6 +45,7 @@ export default function Category({ categories = STATIC_CATEGORIES, onPress, styl
 
 const styles = StyleSheet.create({
   categoriesScroll: {
+    // paddingTop: 10,
     flexGrow: 0,
   },
   categoryChip: {

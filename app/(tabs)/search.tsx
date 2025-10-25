@@ -1,4 +1,3 @@
-import SearchInput from '@/components/SearchInput';
 import { Text, View } from '@/components/Themed';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router } from 'expo-router';
@@ -102,7 +101,7 @@ export default function SearchScreen() {
       </View>
 
       {/* Search Input Section */}
-     <SearchInput />
+     {/* <SearchCategoryBar /> */}
 
       <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
     </View>

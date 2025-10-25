@@ -1,6 +1,9 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Category from './Category';
+import LocationSelector from './LocationSelector';
 
 interface SearchResult {
   id: string;
@@ -8,11 +11,17 @@ interface SearchResult {
   type: 'card' | 'set' | 'category';
 }
 
-export default function SearchInput() {
+export default function SearchCategoryBar({ selectedCategory, onCategorySelect, location, setLocation }: {
+  selectedCategory: string;
+  onCategorySelect: (category: string) => void;
+  location: string;
+  setLocation: (location: string) => void;
+}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+  // const [selectedCategory, setSelectedCategory] = useState<string>('pokemon');
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) {
@@ -71,7 +80,7 @@ export default function SearchInput() {
   );
 
   return (
-    <View>
+    <SafeAreaView style={{ backgroundColor: '#fff'}} edges={['top', 'left', 'right', ]}>
       <View style={styles.searchSection}>
         <View style={styles.searchContainer}>
           <FontAwesome name="search" size={16} color="#666" style={styles.searchIcon} />
@@ -91,8 +100,14 @@ export default function SearchInput() {
               <FontAwesome name="times-circle" size={16} color="#999" />
             </TouchableOpacity>
           )}
+          <LocationSelector location={location} onLocationChange={setLocation} />
         </View>
+
       </View>
+      <Category
+        onPress={(category) => onCategorySelect(category.id)}
+        selectedCategory={selectedCategory}
+      />
 
       {/* <View style={styles.resultsContainer}>
         {isLoading ? (
@@ -128,7 +143,7 @@ export default function SearchInput() {
           </View>
         )}
       </View> */}
-    </View>
+    </SafeAreaView>
   );
 }
 
