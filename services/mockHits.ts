@@ -1,0 +1,105 @@
+import { Hit } from '@/components/HitCard';
+
+// Mock data for development - remove when backend is ready
+export const mockHits: Hit[] = [
+  {
+    id: 1,
+    item_title: 'Rainbow Rare Charizard VMAX',
+    description: 'Just pulled this beauty from a Brilliant Stars booster box! The colors are incredible and the centering is perfect. This has to be my best pull of the year!',
+    price: '0',
+    listing_type: 'selling',
+    condition: 'Mint',
+    status: 'active',
+    user_id: 1,
+    user_name: 'CardCollector99',
+    category_id: 'pokemon',
+    card_set_id: 'brilliant-stars',
+    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+    likes_count: 24,
+    comments_count: 8,
+    is_liked: false,
+    photos: [
+      'https://images.pokemontcg.io/swsh9/74_hires.png',
+    ],
+  },
+  {
+    id: 2,
+    item_title: 'Alternate Art Umbreon VMAX',
+    description: 'I cannot believe I just pulled this from a single pack! The artwork on this card is absolutely stunning. One of my favorite alternate arts ever.',
+    price: '0',
+    listing_type: 'selling',
+    condition: 'Near Mint',
+    status: 'active',
+    user_id: 2,
+    user_name: 'TCGMaster',
+    category_id: 'pokemon',
+    card_set_id: 'evolving-skies',
+    created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
+    likes_count: 156,
+    comments_count: 42,
+    is_liked: true,
+    photos: [
+      'https://images.pokemontcg.io/swsh7/215_hires.png',
+    ],
+  },
+  {
+    id: 3,
+    item_title: 'Gold Star Mew from Ex Holon Phantoms',
+    description: 'After 18 years of searching, I finally found one! This was my holy grail card. Condition is excellent for a vintage card. So happy right now!',
+    price: '0',
+    listing_type: 'selling',
+    condition: 'Excellent',
+    status: 'active',
+    user_id: 3,
+    user_name: 'VintageHunter',
+    category_id: 'pokemon',
+    card_set_id: 'ex-holon-phantoms',
+    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+    likes_count: 89,
+    comments_count: 23,
+    is_liked: false,
+    photos: [
+      'https://images.pokemontcg.io/ex11/101_hires.png',
+    ],
+  },
+  {
+    id: 4,
+    item_title: 'Secret Rare Pikachu VMAX',
+    description: 'Pulled from my first pack of Vivid Voltage! This has been such a good set for me. The rainbow effect is gorgeous in person.',
+    price: '0',
+    listing_type: 'selling',
+    condition: 'Mint',
+    status: 'active',
+    user_id: 4,
+    user_name: 'PikachuFan',
+    category_id: 'pokemon',
+    card_set_id: 'vivid-voltage',
+    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+    likes_count: 67,
+    comments_count: 15,
+    is_liked: true,
+    photos: [
+      'https://images.pokemontcg.io/swsh4/188_hires.png',
+    ],
+  },
+  {
+    id: 5,
+    item_title: 'Shiny Rayquaza VMAX',
+    description: 'This card is absolutely insane! The shiny foil pattern is mesmerizing. Pulled it from the very last pack in my ETB. Best way to end the night!',
+    price: '0',
+    listing_type: 'selling',
+    condition: 'Mint',
+    status: 'active',
+    user_id: 5,
+    user_name: 'DragonMaster',
+    category_id: 'pokemon',
+    card_set_id: 'evolving-skies',
+    created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week ago
+    likes_count: 203,
+    comments_count: 56,
+    is_liked: false,
+    photos: [
+      'https://images.pokemontcg.io/swsh7/217_hires.png',
+    ],
+  },
+];

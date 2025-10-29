@@ -345,6 +345,59 @@ export const authAPI = {
     return response.data;
   },
 
+  async getSharedHits(): Promise<any[]> {
+    try {
+      console.log('🔵 Fetching shared hits');
+      const response = await api.get('/listings?listing_type=selling&status=active');
+      console.log('✅ Shared hits fetched successfully:', response.data.length, 'hits');
+      return response.data;
+    } catch (error: any) {
+      console.log('❌ Shared hits fetch failed:', error.message);
+      const apiError: ApiError = {
+        message: error.response?.data?.message || error.response?.data?.error || 'Failed to fetch shared hits',
+        errors: error.response?.data || {},
+      };
+      throw apiError;
+    }
+  },
+
+  async likeHit(hitId: number): Promise<void> {
+    try {
+      await api.post(`/listings/${hitId}/like`);
+    } catch (error: any) {
+      console.log('❌ Like action failed:', error.message);
+      throw error;
+    }
+  },
+
+  async unlikeHit(hitId: number): Promise<void> {
+    try {
+      await api.delete(`/listings/${hitId}/like`);
+    } catch (error: any) {
+      console.log('❌ Unlike action failed:', error.message);
+      throw error;
+    }
+  },
+
+  async commentOnHit(hitId: number, comment: string): Promise<void> {
+    try {
+      await api.post(`/listings/${hitId}/comments`, { comment });
+    } catch (error: any) {
+      console.log('❌ Comment action failed:', error.message);
+      throw error;
+    }
+  },
+
+  async getHitComments(hitId: number): Promise<any[]> {
+    try {
+      const response = await api.get(`/listings/${hitId}/comments`);
+      return response.data;
+    } catch (error: any) {
+      console.log('❌ Fetch comments failed:', error.message);
+      throw error;
+    }
+  },
+
 };
 
 export default api;
