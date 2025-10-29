@@ -55,7 +55,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
-          // header: () => <SearchCategoryBar />
+          headerRight: () => notificationsLink,
         }}
       />
       <Tabs.Screen
@@ -64,6 +64,15 @@ export default function TabLayout() {
           title: 'Marketplace',
           tabBarIcon: ({ color }) => <TabBarIcon name="shopping-cart" color={color} />,
           // headerRight: () => searchLink,
+        }}
+      />
+      <Tabs.Screen
+        name="post-listing"
+        options={{
+          title: 'Post',
+          headerShown: false,
+          tabBarStyle: { display: 'none' },
+          tabBarIcon: ({ color }) => <TabBarIcon name="plus"  color={color} />,
         }}
       />
       <Tabs.Screen
@@ -95,14 +104,6 @@ export default function TabLayout() {
         options={{
           href: null,
           title: 'Search',
-          headerShown: false,
-        }}
-      />
-      <Tabs.Screen
-        name="post-listing"
-        options={{
-          href: null,
-          title: 'Post Listing',
           headerShown: false,
         }}
       />

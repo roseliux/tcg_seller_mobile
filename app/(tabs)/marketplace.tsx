@@ -1,821 +1,277 @@
-import { useAuth } from '@/components/auth/AuthContext';
-import { Text, View } from '@/components/Themed';
-import { authAPI, Category } from '@/services/api';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import SearchCategoryBar from '@/components/SearchCategoryBar';
+import { View } from '@/components/Themed';
+import { useNavigation } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text } from 'react-native';
 
-// Mock data for marketplace items (replace with real API data later)
-const mockMarketplaceItems = [
-  {
-    id: '1',
-    name: 'Charizard VMAX',
-    set: 'Champion\'s Path',
-    rarity: 'Ultra Rare',
-    price: '$45.99',
-    condition: 'Near Mint',
-    seller: 'CardCollector123',
-  },
-  {
-    id: '2',
-    name: 'Pikachu V',
-    set: 'Vivid Voltage',
-    rarity: 'Rare Holo V',
-    price: '$12.50',
-    condition: 'Lightly Played',
-    seller: 'TCGTrader',
-  },
-  {
-    id: '3',
-    name: 'Mewtwo GX',
-    set: 'Shining Legends',
-    rarity: 'GX Rare',
-    price: '$28.75',
-    condition: 'Near Mint',
-    seller: 'PokemonMaster',
-  },
-  {
-    id: '4',
-    name: 'Rayquaza VMAX',
-    set: 'Evolving Skies',
-    rarity: 'Ultra Rare',
-    price: '$62.00',
-    condition: 'Mint',
-    seller: 'DragonCards',
-  },
-];
-
-// Mock data for user's selling items
-const mockSellingItems: SellingItem[] = [
-  {
-    id: '5',
-    name: 'Lugia V',
-    set: 'Silver Tempest',
-    rarity: 'Rare Holo V',
-    price: '$18.99',
-    condition: 'Near Mint',
-    status: 'Active',
-    views: 45,
-  },
-  {
-    id: '6',
-    name: 'Garchomp VSTAR',
-    set: 'Brilliant Stars',
-    rarity: 'VSTAR Rare',
-    price: '$25.00',
-    condition: 'Mint',
-    status: 'Sold',
-    views: 73,
-  },
-];
-
-// Mock data for wishlist/looking items
-const mockLookingItems: LookingItem[] = [
-  {
-    id: '7',
-    name: 'Shining Charizard',
-    set: 'Neo Revelation',
-    maxPrice: '$150.00',
-    condition: 'Near Mint or better',
-    priority: 'High',
-  },
-  {
-    id: '8',
-    name: 'Base Set Blastoise',
-    set: 'Base Set',
-    maxPrice: '$80.00',
-    condition: 'Lightly Played acceptable',
-    priority: 'Medium',
-  },
-];
-
-interface MarketplaceItem {
+// Example mock product results per category
+const categoryResults: Record<string, Array<{
   id: string;
   name: string;
-  set: string;
-  rarity: string;
+  subtitle: string;
   price: string;
-  condition: string;
-  seller: string;
-}
+  priceChange: string;
+  qty: number;
+  img: any;
+}>> = {
+  pokemon: [
+    {
+      id: 'lucario',
+      name: 'Mega Lucario ex',
+      subtitle: 'Mega Evolution Special Illustration Rare • 179/132\nHolofoil',
+      price: '$5,437.03',
+      priceChange: '-$204.90 (-3.63%)',
+      qty: 3,
+      img: require('@/assets/images/mega_lucario_ex.png'),
+    },
+    {
+      id: 'gardevoir',
+      name: 'Mega Gardevoir ex',
+      subtitle: 'Mega Evolution Special Illustration Rare • 178/132\nHolofoil',
+      price: '$5,498.26',
+      priceChange: '-$277.93 (-4.81%)',
+      qty: 1,
+      img: require('@/assets/images/mega_lucario_ex.png'),
+    },
+    {
+      id: 'booster',
+      name: 'Mega Evolution Enhanced Booster Box',
+      subtitle: 'Mega Evolution\nSealed',
+      price: '$4,868.26',
+      priceChange: '-$788.60 (-13.94%)',
+      qty: 1,
+      img: require('@/assets/images/mega_lucario_ex.png'),
+    },
+    {
+      id: 'moltres',
+      name: 'Team Rocket’s Moltres ex Ultra-Premium Collection',
+      subtitle: 'Miscellaneous Cards & Products\nSealed',
+      price: '$4,023.97',
+      priceChange: '$0.00 (0.00%)',
+      qty: 0,
+      img: require('@/assets/images/mega_lucario_ex.png'),
+    },
+  ],
+  yugioh: [],
+  magic: [],
+  lorcana: [],
+  onepiece: [],
+};
 
-interface SellingItem {
-  id: string;
-  name: string;
-  set: string;
-  rarity: string;
-  price: string;
-  condition: string;
-  status: 'Active' | 'Sold' | 'Pending';
-  views: number;
-}
-
-interface LookingItem {
-  id: string;
-  name: string;
-  set: string;
-  maxPrice: string;
-  condition: string;
-  priority: 'High' | 'Medium' | 'Low';
-}
-
-interface ListingItem {
-  id: number;
-  item_title: string;
-  description: string;
-  price: string;
-  listing_type: 'selling' | 'looking';
-  condition: 'any' | 'mint' | 'near_mint' | 'excellent' | 'good' | 'light_played' | 'played' | 'poor';
-  status: 'active' | 'deactivated' | 'sold' | 'found';
-  user_id: number;
-  category_id: string;
-  card_set_id: string;
-  created_at: string;
-  updated_at: string;
-}
-
-type TabType = 'explore' | 'looking' | 'selling';
 
 export default function MarketplaceScreen() {
-  const { user, isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabType>('explore');
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
-  const [categoriesError, setCategoriesError] = useState<string | null>(null);
-  const [lookingItems, setLookingItems] = useState<ListingItem[]>([]);
-  const [sellingItems, setSellingItems] = useState<ListingItem[]>([]);
-  const { tab, refresh } = useLocalSearchParams<{ tab?: string; refresh?: string }>();
+  const [selectedCategory, setSelectedCategory] = useState<string>('pokemon');
+  const [location, setLocation] = useState<string>('83224');
 
 
-  // Fetch categories when component mounts and user is authenticated
+  const navigation = useNavigation();
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchCategories();
-      fetchLookingItems();
-      fetchSellingItems();
-    }
-  }, [isAuthenticated, tab, refresh]);
+    navigation.setOptions({
+      headerTitle: 'Home',
+      header: () => (<SearchCategoryBar
+        selectedCategory={selectedCategory}
+        onCategorySelect={setSelectedCategory}
+        location={location}
+        setLocation={setLocation}
+      />),
+      // You can add other header options here
+    });
+  }, [navigation, selectedCategory, location]);
 
-    useEffect(() => {
-      if (tab && ['explore', 'selling', 'looking'].includes(tab)) {
-        setActiveTab(tab as TabType);
-      }
-    }, [tab]);
-
-  const fetchCategories = async () => {
-    // try {
-    //   setIsLoadingCategories(true);
-    //   setCategoriesError(null);
-
-    //   const categoriesData = await authAPI.getCategories();
-    //   setCategories(categoriesData);
-    // } catch (error) {
-    //   console.error('Error fetching categories:', error);
-    //   setCategoriesError('Failed to load categories');
-    //   // Fallback to default categories if API fails
-      setCategories([
-        { id: 'pokemon', name: 'Pokemon', created_at: '', updated_at: '' },
-        { id: 'yugioh', name: 'Yu-Gi-Oh!', created_at: '', updated_at: '' },
-        { id: 'magic', name: 'Magic: The Gathering', created_at: '', updated_at: '' },
-      ]);
-    // } finally {
-      setIsLoadingCategories(false);
-    // }
-  };
-
-  const fetchSellingItems = async () => {
-    try {
-      const sellingItemsData = await authAPI.getSellingItems();
-      setSellingItems(sellingItemsData);
-    } catch (error) {
-      console.error('Error fetching selling items:', error);
-    }
-  };
-
-    const fetchLookingItems = async () => {
-    try {
-      const lookingItemsData = await authAPI.getLookingItems();
-      setLookingItems(lookingItemsData);
-    } catch (error) {
-      console.error('Error fetching looking items:', error);
-    }
-  };
-
-  const handleCategoryPress = (category: Category) => {
-    // TODO: Navigate to category-specific listings or filter current listings
-    console.log('Selected category:', category.name);
-    // You can implement navigation or filtering logic here
-    // router.push(`/category/${category.id}`);
-  };
-
-  const renderMarketplaceItem = ({ item }: { item: MarketplaceItem }) => (
-    <TouchableOpacity style={styles.itemCard}>
-      <View style={styles.itemHeader}>
-        <Text style={styles.itemName}>{item.name}</Text>
-        <Text style={styles.itemPrice}>{item.price}</Text>
-      </View>
-
-      <View style={styles.itemDetails}>
-        <Text style={styles.itemSet}>Set: {item.set}</Text>
-        <Text style={styles.itemRarity}>Rarity: {item.rarity}</Text>
-        <Text style={styles.itemCondition}>Condition: {item.condition}</Text>
-        <Text style={styles.itemSeller}>Seller: {item.seller}</Text>
-      </View>
-
-      <TouchableOpacity style={styles.buyButton}>
-        <Text style={styles.buyButtonText}>Claim</Text>
-      </TouchableOpacity>
-    </TouchableOpacity>
-  );
-
-  const renderSellingItem = ({ item }: { item: ListingItem }) => (
-    <TouchableOpacity style={styles.itemCard}>
-      <View style={styles.itemHeader}>
-        <Text style={styles.itemName}>{item.item_title}</Text>
-        <View style={styles.priceStatusContainer}>
-          <Text style={styles.itemPrice}>$ {item.price}</Text>
-          <Text style={[styles.statusBadge,
-            item.status === 'active' ? styles.statusActive :
-            item.status === 'sold' ? styles.statusSold : styles.statusPending
-          ]}>
-            {item.status}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.itemDetails}>
-        <Text style={styles.itemSet}>Set: {item.card_set_id}</Text>
-        {/* <Text style={styles.itemRarity}>Rarity: {item.rarity}</Text> */}
-        <Text style={styles.itemCondition}>Condition: {item.condition}</Text>
-        {/* <Text style={styles.itemViews}>👁 {item.views} views</Text> */}
-      </View>
-
-      <View style={styles.sellingActions}>
-        <TouchableOpacity style={styles.editButton}>
-          <Text style={styles.editButtonText}>Edit</Text>
-        </TouchableOpacity>
-        {/* <TouchableOpacity style={styles.promoteButton}>
-          <Text style={styles.promoteButtonText}>Promote</Text>
-        </TouchableOpacity> */}
-      </View>
-    </TouchableOpacity>
-  );
-
-  const renderLookingItem = ({ item }: { item: ListingItem }) => (
-    <TouchableOpacity style={styles.itemCard}>
-      <View style={styles.itemHeader}>
-        <Text style={styles.itemName}>{item.item_title}</Text>
-        <Text style={[styles.priorityBadge,
-          item.status === 'active' ? styles.statusActive :
-          item.status === 'found' ? styles.statusSold : styles.statusPending
-        ]}>
-          {item.status}
-        </Text>
-      </View>
-
-      <View style={styles.itemDetails}>
-        <Text style={styles.itemSet}>Set: {item.card_set_id}</Text>
-        <Text style={styles.maxPrice}>Max Price: {item.price}</Text>
-        {/* <Text style={styles.itemCondition}>Condition: {item.condition}</Text> */}
-      </View>
-
-      <View style={styles.lookingActions}>
-        {/* <TouchableOpacity style={styles.alertButton}>
-          <Text style={styles.alertButtonText}>🔔 Set Alert</Text>
-        </TouchableOpacity> */}
-        <TouchableOpacity style={styles.searchButton}>
-          <Text style={styles.searchButtonText}>🔍 Search Now</Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'explore':
-        return (
-          <>
-            <View style={styles.categoriesSection}>
-              <Text style={styles.sectionTitle}>Popular Categories</Text>
-              {isLoadingCategories ? (
-                <View style={styles.categoriesLoading}>
-                  <ActivityIndicator size="small" color="#007AFF" />
-                  <Text style={styles.loadingText}>Loading categories...</Text>
-                </View>
-              ) : categoriesError ? (
-                <TouchableOpacity style={styles.retryContainer} onPress={fetchCategories}>
-                  <Text style={styles.errorText}>Failed to load categories</Text>
-                  <Text style={styles.retryText}>Tap to retry</Text>
-                </TouchableOpacity>
-              ) : (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
-                  {categories.map((category) => (
-                    <TouchableOpacity
-                      key={category.id}
-                      style={styles.categoryChip}
-                      onPress={() => handleCategoryPress(category)}
-                    >
-                      <Text style={styles.categoryText}>{category.name}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              )}
-            </View>
-
-            <View style={styles.marketplaceSection}>
-              <Text style={styles.sectionTitle}>Featured Cards</Text>
-              <FlatList
-                data={mockMarketplaceItems}
-                renderItem={renderMarketplaceItem}
-                keyExtractor={(item) => String(item.id)}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.marketplaceList}
-              />
-            </View>
-          </>
-        );
-
-      case 'selling':
-        return (
-          <View style={styles.marketplaceSection}>
-            <View style={styles.sellingHeader}>
-              <Text style={styles.sectionTitle}>Your Listings</Text>
-              {/* <TouchableOpacity style={styles.addListingButton}> */}
-                {/* <Text style={styles.addListingButtonText}>+ Add New</Text> */}
-              {/* </TouchableOpacity> */}
-            </View>
-            <FlatList
-              data={sellingItems}
-              renderItem={renderSellingItem}
-              keyExtractor={(item) => String(item.id)}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.marketplaceList}
-              ListEmptyComponent={
-                <View style={styles.emptyState}>
-                  <Text style={styles.emptyStateText}>No active listings</Text>
-                  <Text style={styles.emptyStateSubtext}>Start selling your cards today!</Text>
-                </View>
-              }
-            />
-          </View>
-        );
-
-      case 'looking':
-        return (
-          <View style={styles.marketplaceSection}>
-            <View style={styles.lookingHeader}>
-              <Text style={styles.sectionTitle}>Your Wishlist</Text>
-              {/* <TouchableOpacity style={styles.addWishlistButton}> */}
-                {/* <Text style={styles.addWishlistButtonText}>+ Add Card</Text> */}
-              {/* </TouchableOpacity> */}
-            </View>
-            <FlatList
-              data={lookingItems}
-              renderItem={renderLookingItem}
-              keyExtractor={(item) => String(item.id)}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.marketplaceList}
-              ListEmptyComponent={
-                <View style={styles.emptyState}>
-                  <Text style={styles.emptyStateText}>No cards in wishlist</Text>
-                  <Text style={styles.emptyStateSubtext}>Add cards you're looking for!</Text>
-                </View>
-              }
-            />
-          </View>
-        );
-
-      default:
-    }
-  };
+  const products = categoryResults[selectedCategory] || [];
 
   return (
-    <View style={styles.container}>
-      {/* Tab Bar */}
-      <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'explore' && styles.activeTab]}
-          onPress={() => setActiveTab('explore')}
-        >
-          <Text style={[styles.tabText, activeTab === 'explore' && styles.activeTabText]}>
-            🔍 Explore
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'looking' && styles.activeTab]}
-          onPress={() => setActiveTab('looking')}
-        >
-          <Text style={[styles.tabText, activeTab === 'looking' && styles.activeTabText]}>
-            👀 Looking
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'selling' && styles.activeTab]}
-          onPress={() => setActiveTab('selling')}
-        >
-          <Text style={[styles.tabText, activeTab === 'selling' && styles.activeTabText]}>
-            💰 Selling
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Tab Content */}
-      <View style={styles.tabContent}>
-        {renderTabContent()}
-      </View>
-
-      {/* Floating Action Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/post-listing')}
-        activeOpacity={0.8}
-      >
-        <FontAwesome name="plus" size={24} color="#fff" />
-      </TouchableOpacity>
+    <View style={styles.resultsWrapper}>
+      <ScrollView contentContainerStyle={styles.grid}>
+          {products.length === 0 ? (
+            <Text style={styles.noResultsText}>No products found for {selectedCategory} category.</Text>
+          ) : (
+            products.map((product) => (
+              <View key={product.id} style={styles.card}>
+                <Image
+                  source={product.img}
+                  style={styles.productImage}
+                  resizeMode="contain"
+                />
+                <Text style={styles.productName}>{product.name}</Text>
+                <Text style={styles.productSubtitle}>{product.subtitle}</Text>
+                <Text style={styles.productPrice}>{product.price}</Text>
+              </View>
+            ))
+          )}
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    padding: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-  },
-  searchSection: {
+  searchRow: {
     flexDirection: 'row',
-    padding: 15,
-    backgroundColor: '#fff',
-    marginTop: 10,
-    marginHorizontal: 10,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    alignItems: 'center',
+    paddingRight: 12,
+    marginTop: 8,
+    marginBottom: 4,
   },
-  searchButton: {
+  resultsWrapper: {
+    padding: 16,
     flex: 1,
-    backgroundColor: '#007AFF',
-    padding: 12,
-    borderRadius: 8,
-    marginRight: 10,
-    alignItems: 'center',
   },
-  searchButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    paddingBottom: 32,
   },
-  filterButton: {
-    backgroundColor: '#34C759',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    minWidth: 80,
-  },
-  filterButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  categoriesSection: {
-    margin: 10,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    marginLeft: 5,
-  },
-  categoriesScroll: {
-    flexGrow: 0,
-  },
-  categoryChip: {
+  card: {
+    flexBasis: '45%',
+    flexGrow: 1,
     backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 16,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#eee',
+    minWidth: 150,
+    maxWidth: '100%',
+  },
+  productImage: {
+    width: '100%',
+    height: 120,
+    borderRadius: 8,
+    marginBottom: 8,
+    backgroundColor: '#f4f4f4',
+  },
+  productName: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  productSubtitle: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 4,
+  },
+  productPrice: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  productPriceChange: {
+    fontSize: 13,
+    color: '#C00',
+    marginBottom: 2,
+  },
+  productQty: {
+    fontSize: 13,
+    color: '#333',
+  },
+  noResultsText: {
+    fontSize: 16,
+    color: '#999',
+    marginTop: 32,
+    textAlign: 'center',
+    width: '100%',
+  },
+  locationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    // marginLeft: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
     borderRadius: 20,
-    marginRight: 10,
+    backgroundColor: '#f4f4f4',
     borderWidth: 1,
     borderColor: '#e0e0e0',
+},
+locationText: {
+  fontSize: 16,
+  color: '#333',
+  fontWeight: '600',
+  letterSpacing: 0.5,
+  marginLeft: 8,
+},
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  categoryText: {
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '80%',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 20,
+    backgroundColor: '#f8f8f8',
+  },
+  modalCheckboxRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  checkboxOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#C77DFF',
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  checkboxChecked: {
+    backgroundColor: '#C77DFF',
+    borderColor: '#C77DFF',
+  },
+  checkboxLabel: {
+    fontSize: 15,
     color: '#333',
     fontWeight: '500',
   },
-  marketplaceSection: {
-    flex: 1,
-    margin: 10,
-  },
-  marketplaceList: {
-    paddingBottom: 20,
-  },
-  itemCard: {
-    backgroundColor: '#fff',
-    marginBottom: 15,
-    borderRadius: 12,
-    padding: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  itemHeader: {
+  modalActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 10,
+    justifyContent: 'flex-end',
+    gap: 12,
   },
-  itemName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    flex: 1,
-    marginRight: 10,
-  },
-  itemPrice: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#007AFF',
-  },
-  itemDetails: {
-    marginBottom: 15,
-  },
-  itemSet: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 2,
-  },
-  itemRarity: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 2,
-  },
-  itemCondition: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 2,
-  },
-  itemSeller: {
-    fontSize: 14,
-    color: '#666',
-  },
-  buyButton: {
-    backgroundColor: '#34C759',
-    padding: 12,
+  modalButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 18,
     borderRadius: 8,
-    alignItems: 'center',
+    backgroundColor: '#f4f4f4',
   },
-  buyButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+  modalButtonText: {
     fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
   },
-  // Tab Styles
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    paddingHorizontal: 5,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+  modalButtonPrimary: {
+    backgroundColor: '#C77DFF',
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    marginHorizontal: 3,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  activeTab: {
-    backgroundColor: '#007AFF',
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-  },
-  activeTabText: {
+  modalButtonPrimaryText: {
     color: '#fff',
-  },
-  tabContent: {
-    flex: 1,
-  },
-  // Selling Item Styles
-  priceStatusContainer: {
-    alignItems: 'flex-end',
-  },
-  statusBadge: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginTop: 4,
-  },
-  statusActive: {
-    backgroundColor: '#34C759',
-    color: '#fff',
-  },
-  statusSold: {
-    backgroundColor: '#FF3B30',
-    color: '#fff',
-  },
-  statusPending: {
-    backgroundColor: '#FF9500',
-    color: '#fff',
-  },
-  itemViews: {
-    fontSize: 14,
-    color: '#666',
-    fontStyle: 'italic',
-  },
-  sellingActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  editButton: {
-    flex: 1,
-    backgroundColor: '#007AFF',
-    padding: 10,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  editButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  promoteButton: {
-    flex: 1,
-    backgroundColor: '#FF9500',
-    padding: 10,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  promoteButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  // Looking Item Styles
-  priorityBadge: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  priorityHigh: {
-    backgroundColor: '#FF3B30',
-    color: '#fff',
-  },
-  priorityMedium: {
-    backgroundColor: '#FF9500',
-    color: '#fff',
-  },
-  priorityLow: {
-    backgroundColor: '#34C759',
-    color: '#fff',
-  },
-  maxPrice: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 2,
-    fontWeight: '600',
-  },
-  lookingActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  alertButton: {
-    flex: 1,
-    backgroundColor: '#FF9500',
-    padding: 10,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  alertButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  // Header Styles
-  sellingHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-    paddingHorizontal: 5,
-  },
-  lookingHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-    paddingHorizontal: 5,
-  },
-  addListingButton: {
-    backgroundColor: '#34C759',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  addListingButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  addWishlistButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  addWishlistButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  // Empty State Styles
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-  },
-  emptyStateText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 5,
-  },
-  emptyStateSubtext: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
-  },
-  // Floating Action Button
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#007AFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  // Categories Loading States
-  categoriesLoading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-  },
-  loadingText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#666',
-  },
-  retryContainer: {
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-  },
-  errorText: {
-    fontSize: 14,
-    color: '#FF3B30',
-    marginBottom: 4,
-  },
-  retryText: {
-    fontSize: 12,
-    color: '#007AFF',
-    textDecorationLine: 'underline',
+    fontWeight: '700',
   },
 });
