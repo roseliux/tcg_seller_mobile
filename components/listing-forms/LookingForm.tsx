@@ -17,7 +17,7 @@ import {
 const CONDITIONS = ['Any', 'Mint', 'Near Mint', 'Excellent', 'Good', 'Light Played', 'Played', 'Poor'];
 const CATEGORIES = ['Pokemon', 'Magic: The Gathering', 'Yu-Gi-Oh!', 'Lorcana', 'One Piece'];
 
-export default function BuyForm() {
+export default function LookingForm() {
   const [form, setForm] = useState({
     item_title: '',
     description: '',
@@ -164,7 +164,7 @@ export default function BuyForm() {
         <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
           <FontAwesome name="times" size={20} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Buy</Text>
+        <Text style={styles.headerTitle}>Looking</Text>
         <TouchableOpacity
           style={[
             styles.postButton,

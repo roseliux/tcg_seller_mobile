@@ -1,5 +1,5 @@
 import { Text, View } from '@/components/Themed';
-import BuyForm from '@/components/listing-forms/BuyForm';
+import LookingForm from '@/components/listing-forms/LookingForm';
 import SellForm from '@/components/listing-forms/SellForm';
 import ShareHitForm from '@/components/listing-forms/ShareHitForm';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -18,7 +18,7 @@ export default function PostListingScreen() {
       case 'sell':
         return <SellForm />;
       case 'looking':
-        return <BuyForm />;
+        return <LookingForm />;
       case 'share':
         return <ShareHitForm />;
       default:
