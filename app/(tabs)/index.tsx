@@ -1,3 +1,4 @@
+import CommentsModal, { Comment } from '@/components/CommentsModal';
 import HitCard, { Hit } from '@/components/HitCard';
 import { Text, View } from '@/components/Themed';
 import { authAPI } from '@/services/api';
@@ -15,10 +16,46 @@ import {
 
 const USE_MOCK_DATA = true; // Set to false when backend is ready
 
+// Mock comments data
+const mockComments: Comment[] = [
+  {
+    id: 1,
+    user_id: 2,
+    user_name: 'mariaballesteros86',
+    comment: 'Me encanta',
+    created_at: new Date(Date.now() - 9 * 60 * 60 * 1000).toISOString(),
+    likes_count: 113,
+    is_liked: false,
+    replies_count: 8,
+  },
+  {
+    id: 2,
+    user_id: 3,
+    user_name: 'javierayala_31',
+    comment: 'Que suertudo, no he podido conseguir esa carta',
+    created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    likes_count: 3,
+    is_liked: false,
+    replies_count: 1,
+  },
+  {
+    id: 3,
+    user_id: 4,
+    user_name: '-_jaer_-_',
+    comment: 'gastaste mas de lo que vale 😂',
+    created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+    likes_count: 28,
+    is_liked: false,
+  },
+];
+
 export default function HomeScreen() {
   const [hits, setHits] = useState<Hit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
+  const [selectedHitId, setSelectedHitId] = useState<number | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
 
   const fetchHits = async (isRefresh = false) => {
     try {
@@ -90,7 +127,21 @@ export default function HomeScreen() {
 
   const handleComment = async (hitId: number, comment: string) => {
     try {
-      await authAPI.commentOnHit(hitId, comment);
+      if (USE_MOCK_DATA) {
+        // Add comment to local mock data
+        const newComment: Comment = {
+          id: Date.now(),
+          user_id: 99,
+          user_name: 'You',
+          comment,
+          created_at: new Date().toISOString(),
+          likes_count: 0,
+          is_liked: false,
+        };
+        setComments(prev => [...prev, newComment]);
+      } else {
+        await authAPI.commentOnHit(hitId, comment);
+      }
 
       // Update comments count locally
       setHits(prev => prev.map(hit =>
@@ -98,17 +149,46 @@ export default function HomeScreen() {
           ? { ...hit, comments_count: hit.comments_count + 1 }
           : hit
       ));
-
-      Alert.alert('Success', 'Comment posted!');
     } catch (error: any) {
       console.error('Error posting comment:', error);
       Alert.alert('Error', 'Failed to post comment');
     }
   };
 
+  const handleOpenComments = async (hitId: number) => {
+    setSelectedHitId(hitId);
+
+    if (USE_MOCK_DATA) {
+      // Use mock comments
+      setComments(mockComments);
+    } else {
+      try {
+        const fetchedComments = await authAPI.getHitComments(hitId);
+        setComments(fetchedComments);
+      } catch (error: any) {
+        console.error('Error fetching comments:', error);
+        Alert.alert('Error', 'Failed to load comments');
+        return;
+      }
+    }
+
+    setShowCommentsModal(true);
+  };
+
+  const handleLikeComment = (commentId: number) => {
+    setComments(prev => prev.map(comment =>
+      comment.id === commentId
+        ? {
+            ...comment,
+            is_liked: !comment.is_liked,
+            likes_count: comment.is_liked ? comment.likes_count - 1 : comment.likes_count + 1,
+          }
+        : comment
+    ));
+  };
+
   const handleViewComments = (hitId: number) => {
-    // TODO: Navigate to comments screen
-    Alert.alert('View Comments', `Opening comments for hit ${hitId}`);
+    handleOpenComments(hitId);
   };
 
   const handleRefresh = () => {
@@ -148,29 +228,44 @@ export default function HomeScreen() {
           <Text style={styles.loadingText}>Loading shared hits...</Text>
         </View>
       ) : (
-        <FlatList
-          data={hits}
-          renderItem={({ item }) => (
-            <HitCard
-              hit={item}
-              onLike={handleLike}
-              onComment={handleComment}
-              onViewComments={handleViewComments}
-            />
-          )}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.listContent}
-          // ListHeaderComponent={renderHeader}
-          ListEmptyComponent={renderEmpty}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={handleRefresh}
-              tintColor="#007AFF"
-            />
-          }
-          showsVerticalScrollIndicator={false}
-        />
+        <>
+          <FlatList
+            data={hits}
+            renderItem={({ item }) => (
+              <HitCard
+                hit={item}
+                onLike={handleLike}
+                onComment={handleComment}
+                onViewComments={handleViewComments}
+                onOpenComments={handleOpenComments}
+              />
+            )}
+            keyExtractor={(item) => item.id.toString()}
+            contentContainerStyle={styles.listContent}
+            // ListHeaderComponent={renderHeader}
+            ListEmptyComponent={renderEmpty}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={handleRefresh}
+                tintColor="#007AFF"
+              />
+            }
+            showsVerticalScrollIndicator={false}
+          />
+
+          <CommentsModal
+            visible={showCommentsModal}
+            onClose={() => setShowCommentsModal(false)}
+            comments={comments}
+            onPostComment={(comment) => {
+              if (selectedHitId) {
+                handleComment(selectedHitId, comment);
+              }
+            }}
+            onLikeComment={handleLikeComment}
+          />
+        </>
       )}
     </View>
   );

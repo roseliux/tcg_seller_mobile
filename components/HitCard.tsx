@@ -1,10 +1,10 @@
 import { Text, View } from '@/components/Themed';
+import CommentsModal, { Comment } from '@/components/CommentsModal';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import React, { useState } from 'react';
 import {
     Image,
     StyleSheet,
-    TextInput,
     TouchableOpacity
 } from 'react-native';
 
@@ -33,11 +33,10 @@ interface HitCardProps {
   onLike: (hitId: number) => void;
   onComment: (hitId: number, comment: string) => void;
   onViewComments: (hitId: number) => void;
+  onOpenComments: (hitId: number) => void;
 }
 
-export default function HitCard({ hit, onLike, onComment, onViewComments }: HitCardProps) {
-  const [showCommentInput, setShowCommentInput] = useState(false);
-  const [commentText, setCommentText] = useState('');
+export default function HitCard({ hit, onLike, onComment, onViewComments, onOpenComments }: HitCardProps) {
   const [isLiked, setIsLiked] = useState(hit.is_liked);
   const [likesCount, setLikesCount] = useState(hit.likes_count);
 
@@ -46,14 +45,6 @@ export default function HitCard({ hit, onLike, onComment, onViewComments }: HitC
     setIsLiked(newLikedState);
     setLikesCount(prev => newLikedState ? prev + 1 : prev - 1);
     onLike(hit.id);
-  };
-
-  const handleCommentSubmit = () => {
-    if (commentText.trim()) {
-      onComment(hit.id, commentText.trim());
-      setCommentText('');
-      setShowCommentInput(false);
-    }
   };
 
   const formatTimeAgo = (dateString: string) => {
@@ -141,7 +132,7 @@ export default function HitCard({ hit, onLike, onComment, onViewComments }: HitC
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => setShowCommentInput(!showCommentInput)}
+            onPress={() => onOpenComments(hit.id)}
           >
             <FontAwesome name="comment-o" size={24} color="#000" />
           </TouchableOpacity>
@@ -162,37 +153,13 @@ export default function HitCard({ hit, onLike, onComment, onViewComments }: HitC
           </Text>
         )}
         {hit.comments_count > 0 && (
-          <TouchableOpacity onPress={() => onViewComments(hit.id)}>
+          <TouchableOpacity onPress={() => onOpenComments(hit.id)}>
             <Text style={styles.commentsText}>
               View all {hit.comments_count} comments
             </Text>
           </TouchableOpacity>
         )}
       </View>
-
-      {/* Comment Input */}
-      {showCommentInput && (
-        <View style={styles.commentInputContainer}>
-          <TextInput
-            style={styles.commentInput}
-            placeholder="Add a comment..."
-            placeholderTextColor="#999"
-            value={commentText}
-            onChangeText={setCommentText}
-            multiline
-            autoFocus
-          />
-          <TouchableOpacity
-            style={[styles.postButton, !commentText.trim() && styles.postButtonDisabled]}
-            onPress={handleCommentSubmit}
-            disabled={!commentText.trim()}
-          >
-            <Text style={[styles.postButtonText, !commentText.trim() && styles.postButtonTextDisabled]}>
-              Post
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
     </View>
   );
 }
@@ -346,36 +313,5 @@ const styles = StyleSheet.create({
   commentsText: {
     fontSize: 14,
     color: '#666',
-  },
-  commentInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingBottom: 12,
-    gap: 8,
-  },
-  commentInput: {
-    flex: 1,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    fontSize: 14,
-    maxHeight: 80,
-  },
-  postButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  postButtonDisabled: {
-    opacity: 0.5,
-  },
-  postButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#007AFF',
-  },
-  postButtonTextDisabled: {
-    color: '#999',
   },
 });
