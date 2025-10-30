@@ -15,10 +15,9 @@ import { useColorScheme } from '@/components/useColorScheme';
 // Hide specific React Native warnings
 // LogBox.ignoreLogs([
 //   'boxShadow',
+//   'shadow*',
+//   'props.pointerEvents',
 //   'pointerEvents',
-//   'props-found',
-//   'index',
-//   'tabs',
 // ]);
 
 // Create a client
@@ -67,7 +66,6 @@ function RootLayoutNav() {
             <Stack>
               <Stack.Screen name="(auth)" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="notifications" options={{ headerShown: false }} />
             </Stack>
           </ThemeProvider>
         </AuthGuard>
@@ -102,7 +100,6 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     return (
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="notifications" options={{ headerShown: false }} />
       </Stack>
     );
   } else {
