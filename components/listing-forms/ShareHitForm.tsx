@@ -1,5 +1,6 @@
 import { Text, View } from '@/components/Themed';
 import { authAPI } from '@/services/api';
+import { logger } from '@/services/logger';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -84,7 +85,7 @@ export default function ShareHitForm() {
       };
 
       await authAPI.createListing(listingRequest);
-      console.log('Creating share hit:', listingRequest);
+      logger.log('Creating share hit:', listingRequest);
 
       setForm({
         item_title: '',
@@ -160,8 +161,8 @@ export default function ShareHitForm() {
       'Add Photo',
       'Choose photo source',
       [
-        { text: 'Camera', onPress: () => console.log('Camera selected') },
-        { text: 'Photo Library', onPress: () => console.log('Library selected') },
+        { text: 'Camera', onPress: () => logger.log('Camera selected') },
+        { text: 'Photo Library', onPress: () => logger.log('Library selected') },
         { text: 'Cancel', style: 'cancel' },
       ]
     );

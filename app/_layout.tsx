@@ -1,3 +1,4 @@
+import { logger } from '@/services/logger';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -10,6 +11,15 @@ import 'react-native-reanimated';
 
 import { AuthProvider, useAuth } from '@/components/auth/AuthContext';
 import { useColorScheme } from '@/components/useColorScheme';
+
+// Hide specific React Native warnings
+// LogBox.ignoreLogs([
+//   'boxShadow',
+//   'pointerEvents',
+//   'props-found',
+//   'index',
+//   'tabs',
+// ]);
 
 // Create a client
 const queryClient = new QueryClient();
@@ -71,14 +81,14 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const colorScheme = useColorScheme();
 
   useEffect(() => {
-    console.log('🔄 AuthGuard: Auth state changed - isLoading:', isLoading, ', isAuthenticated:', isAuthenticated, ', user:', user?.email);
+    logger.log('🔄 AuthGuard: Auth state changed - isLoading:', isLoading, ', isAuthenticated:', isAuthenticated, ', user:', user?.email);
   }, [isAuthenticated, isLoading, user]);
 
-  console.log('🔄 AuthGuard: Rendering - isLoading:', isLoading, ', isAuthenticated:', isAuthenticated, ', user:', user?.email);
+  logger.log('🔄 AuthGuard: Rendering - isLoading:', isLoading, ', isAuthenticated:', isAuthenticated, ', user:', user?.email);
 
   // Show loading while checking auth state
   if (isLoading) {
-    console.log('⏳ AuthGuard: Still loading auth state...');
+    logger.log('⏳ AuthGuard: Still loading auth state...');
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator size="large" />
@@ -88,7 +98,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   // Conditionally render based on auth state
   if (isAuthenticated) {
-    console.log('🟢 AuthGuard: User authenticated (' + user?.email + '), showing tabs only');
+    logger.log('🟢 AuthGuard: User authenticated (' + user?.email + '), showing tabs only');
     return (
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -96,7 +106,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       </Stack>
     );
   } else {
-    console.log('🔴 AuthGuard: User not authenticated, showing auth screens only');
+    logger.log('🔴 AuthGuard: User not authenticated, showing auth screens only');
     return (
       <Stack>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />

@@ -1,8 +1,8 @@
 import { useAuth } from '@/components/auth/AuthContext';
 import { Text, View } from '@/components/Themed';
+import { logger } from '@/services/logger';
 import React, { useState } from 'react';
 import { FlatList, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
-
 // Mock data for conversations
 const mockConversations = [
   {
@@ -149,7 +149,7 @@ export default function MessagesScreen() {
   const handleSendMessage = () => {
     if (newMessage.trim()) {
       // In a real app, this would send the message to the API
-      console.log('Sending message:', newMessage);
+      logger.log('Sending message:', newMessage);
       setNewMessage('');
     }
   };

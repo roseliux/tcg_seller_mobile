@@ -1,4 +1,5 @@
 import { useAuth } from '@/components/auth/AuthContext';
+import { logger } from '@/services/logger';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -13,14 +14,14 @@ export default function IndexScreen() {
 
   useEffect(() => {
     if (isMounted && !isLoading) {
-      console.log('🔄 Index: Redirecting based on auth state - isAuthenticated:', isAuthenticated);
+      logger.log('🔄 Index: Redirecting based on auth state - isAuthenticated:', isAuthenticated);
 
       const timer = setTimeout(() => {
         if (isAuthenticated) {
-          console.log('🟢 Index: Redirecting to tabs');
+          logger.log('🟢 Index: Redirecting to tabs');
           router.replace('/(tabs)');
         } else {
-          console.log('🔴 Index: Redirecting to sign in');
+          logger.log('🔴 Index: Redirecting to sign in');
           router.replace('/(auth)/signin');
         }
       }, 100);

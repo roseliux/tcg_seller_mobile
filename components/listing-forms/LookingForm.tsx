@@ -1,5 +1,6 @@
 import { Text, View } from '@/components/Themed';
 import { authAPI } from '@/services/api';
+import { logger } from '@/services/logger';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -85,7 +86,7 @@ export default function LookingForm() {
       };
 
       await authAPI.createListing(listingRequest);
-      console.log('Creating listing:', listingRequest);
+      logger.log('Creating listing:', listingRequest);
 
       setForm({
         item_title: '',

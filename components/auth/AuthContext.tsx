@@ -1,4 +1,5 @@
 import { authAPI, TokenManager, type RegisterRequest } from '@/services/api';
+import { logger } from '@/services/logger';
 import { router } from 'expo-router';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
@@ -42,12 +43,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuthState = async () => {
     try {
-      console.log('🔄 AuthContext: Checking auth state...');
+      logger.log('🔄 AuthContext: Checking auth state...');
       const token = await TokenManager.getToken();
       const storedUser = await TokenManager.getUser();
 
       if (token && storedUser) {
-        console.log('🟢 AuthContext: Found stored auth data');
+        logger.log('🟢 AuthContext: Found stored auth data');
         // Convert API user format to local user format
         const userData = {
           id: storedUser.id,
@@ -58,9 +59,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           verified: storedUser.verified,
         };
         setUser(userData);
-        console.log('🟢 AuthContext: Restored user session:', userData);
+        logger.log('🟢 AuthContext: Restored user session:', userData);
       } else {
-        console.log('🔴 AuthContext: No stored auth data found');
+        logger.log('🔴 AuthContext: No stored auth data found');
       }
     } catch (error) {
       console.error('🔴 AuthContext: Error checking auth state:', error);
@@ -73,11 +74,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      console.log('🔵 AuthContext: Starting sign in process...');
+      logger.log('🔵 AuthContext: Starting sign in process...');
       setIsLoading(true);
       const response = await authAPI.login({ email, password });
 
-      console.log('🟢 AuthContext: Login successful, storing data...');
+      logger.log('🟢 AuthContext: Login successful, storing data...');
       // Store token and user data
       await TokenManager.setToken(response.token);
       await TokenManager.setUser(response.user);
@@ -93,11 +94,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       setUser(userData);
-      console.log('🟢 AuthContext: User state updated:', userData);
-      console.log('🟢 AuthContext: User is now authenticated!');
+      logger.log('🟢 AuthContext: User state updated:', userData);
+      logger.log('🟢 AuthContext: User is now authenticated!');
 
       // Navigate to main app after successful sign in
-      console.log('🔄 AuthContext: Navigating to main app...');
+      logger.log('🔄 AuthContext: Navigating to main app...');
       router.replace('/(tabs)');
     } catch (error) {
       console.error('🔴 AuthContext: Sign in error:', error);
@@ -109,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (userData: RegisterData) => {
     try {
-      console.log('🔵 AuthContext: Starting sign up process...');
+      logger.log('🔵 AuthContext: Starting sign up process...');
       setIsLoading(true);
 
       // Transform the data to match the API format
@@ -124,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const response = await authAPI.register(registerRequest);
 
-      console.log('🟢 AuthContext: Registration successful, storing data...');
+      logger.log('🟢 AuthContext: Registration successful, storing data...');
       // Store token and user data
       await TokenManager.setToken(response.token);
       await TokenManager.setUser(response.user);
@@ -140,11 +141,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       setUser(newUserData);
-      console.log('🟢 AuthContext: User state updated after registration:', newUserData);
-      console.log('🟢 AuthContext: User is now authenticated!');
+      logger.log('🟢 AuthContext: User state updated after registration:', newUserData);
+      logger.log('🟢 AuthContext: User is now authenticated!');
 
       // Navigate to main app after successful registration
-      console.log('🔄 AuthContext: Navigating to main app...');
+      logger.log('🔄 AuthContext: Navigating to main app...');
       router.replace('/(tabs)');
     } catch (error) {
       console.error('🔴 AuthContext: Sign up error:', error);
@@ -156,7 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      console.log('🔵 AuthContext: Starting sign out process...');
+      logger.log('🔵 AuthContext: Starting sign out process...');
       setIsLoading(true);
 
       // Call logout API (don't throw on failure)
@@ -167,10 +168,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Update local state
       setUser(null);
-      console.log('🟢 AuthContext: User signed out successfully');
+      logger.log('🟢 AuthContext: User signed out successfully');
 
       // Navigate back to sign in
-      console.log('🔄 AuthContext: Navigating to sign in...');
+      logger.log('🔄 AuthContext: Navigating to sign in...');
       router.replace('/(auth)/signin');
     } catch (error) {
       console.error('🔴 AuthContext: Sign out error:', error);

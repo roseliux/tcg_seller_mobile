@@ -1,3 +1,4 @@
+import { logger } from '@/services/logger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Platform } from 'react-native';
@@ -10,21 +11,21 @@ const API_BASE_URL = __DEV__
     : baseURL                  // Dynamic IP for iOS/physical devices
   : 'https://your-production-api.com'; // Production - update with your actual URL
 
-console.log('🌐 API Configuration:');
-console.log('  Platform.OS:', Platform.OS);
-console.log('  __DEV__:', __DEV__);
-console.log('  Dynamic IP:', getDevServerIP());
-console.log('  API_BASE_URL:', API_BASE_URL);
+logger.log('🌐 API Configuration:');
+logger.log('  Platform.OS:', Platform.OS);
+logger.log('  __DEV__:', __DEV__);
+logger.log('  Dynamic IP:', getDevServerIP());
+logger.log('  API_BASE_URL:', API_BASE_URL);
 
 // Test network connectivity
 if (__DEV__) {
   fetch(`${API_BASE_URL}/health`)
     .then(response => {
-      console.log('✅ Network connectivity test successful:', response.status);
+      logger.log('✅ Network connectivity test successful:', response.status);
     })
     .catch(error => {
-      console.log('❌ Network connectivity test failed:', error.message);
-      console.log('💡 Make sure Rails server is running with: bin/rails server -b 0.0.0.0');
+      logger.log('❌ Network connectivity test failed:', error.message);
+      logger.log('💡 Make sure Rails server is running with: bin/rails server -b 0.0.0.0');
     });
 }
 
@@ -116,7 +117,7 @@ export const TokenManager = {
     try {
       return await AsyncStorage.getItem('auth_token');
     } catch (error) {
-      console.error('Error getting token:', error);
+      logger.error('Error getting token:', error);
       return null;
     }
   },
@@ -125,7 +126,7 @@ export const TokenManager = {
     try {
       await AsyncStorage.setItem('auth_token', token);
     } catch (error) {
-      console.error('Error setting token:', error);
+      logger.error('Error setting token:', error);
     }
   },
 
@@ -133,7 +134,7 @@ export const TokenManager = {
     try {
       await AsyncStorage.removeItem('auth_token');
     } catch (error) {
-      console.error('Error removing token:', error);
+      logger.error('Error removing token:', error);
     }
   },
 
@@ -142,7 +143,7 @@ export const TokenManager = {
       const userData = await AsyncStorage.getItem('user_data');
       return userData ? JSON.parse(userData) : null;
     } catch (error) {
-      console.error('Error getting user data:', error);
+      logger.error('Error getting user data:', error);
       return null;
     }
   },
@@ -151,7 +152,7 @@ export const TokenManager = {
     try {
       await AsyncStorage.setItem('user_data', JSON.stringify(user));
     } catch (error) {
-      console.error('Error setting user data:', error);
+      logger.error('Error setting user data:', error);
     }
   },
 
@@ -159,7 +160,7 @@ export const TokenManager = {
     try {
       await AsyncStorage.removeItem('user_data');
     } catch (error) {
-      console.error('Error removing user data:', error);
+      logger.error('Error removing user data:', error);
     }
   },
 
@@ -239,20 +240,20 @@ export const authAPI = {
 
   async login(data: LoginRequest): Promise<AuthResponse> {
     try {
-      console.log('🔵 Login attempt:', { email: data.email, baseURL: API_BASE_URL });
+      logger.log('🔵 Login attempt:', { email: data.email, baseURL: API_BASE_URL });
 
       const response = await api.post('/sign_in', data);
-      console.log('🟢 Login response status:', response.status);
-      console.log('🟢 Login response headers:', response.headers);
+      logger.log('🟢 Login response status:', response.status);
+      logger.log('🟢 Login response headers:', response.headers);
 
       const token = response.headers['x-session-token'];
 
       if (!token) {
-        console.log('🔴 No session token in headers:', Object.keys(response.headers));
+        logger.log('🔴 No session token in headers:', Object.keys(response.headers));
         throw new Error('No session token received');
       }
 
-      console.log('🟢 Session token received:', token.substring(0, 20) + '...');
+      logger.log('🟢 Session token received:', token.substring(0, 20) + '...');
 
       // Get user data from the /me endpoint
       const currentUserResponse = await api.get('/me', {
@@ -261,7 +262,7 @@ export const authAPI = {
         },
       });
 
-      console.log('🟢 Current user response:', currentUserResponse.data);
+      logger.log('🟢 Current user response:', currentUserResponse.data);
       const user = currentUserResponse.data;
 
       return {
@@ -270,10 +271,10 @@ export const authAPI = {
         token,
       };
     } catch (error: any) {
-      console.log('🔴 Login error:', error);
-      console.log('🔴 Error response:', error.response?.data);
-      console.log('🔴 Error status:', error.response?.status);
-      console.log('🔴 Error message:', error.message);
+      logger.log('🔴 Login error:', error);
+      logger.log('🔴 Error response:', error.response?.data);
+      logger.log('🔴 Error status:', error.response?.status);
+      logger.log('🔴 Error message:', error.message);
 
       const apiError: ApiError = {
         message: error.response?.data?.message || error.response?.data?.error || error.message || 'Login failed',
@@ -288,7 +289,7 @@ export const authAPI = {
       await api.delete('/sign_out');
     } catch (error) {
       // Log error but don't throw - logout should always succeed locally
-      console.error('Logout API error:', error);
+      logger.error('Logout API error:', error);
     }
   },
 
@@ -299,14 +300,14 @@ export const authAPI = {
 
   async getCategories(): Promise<Category[]> {
     try {
-      console.log('🔵 Fetching categories from:', api.defaults.baseURL + '/categories');
+      logger.log('🔵 Fetching categories from:', api.defaults.baseURL + '/categories');
       const response = await api.get('/categories');
-      console.log('✅ Categories fetched successfully:', response.data.length, 'categories');
+      logger.log('✅ Categories fetched successfully:', response.data.length, 'categories');
       return response.data;
     } catch (error: any) {
-      console.log('❌ Categories fetch failed:', error.message);
+      logger.log('❌ Categories fetch failed:', error.message);
       if (error.code === 'NETWORK_ERROR' || error.message.includes('ERR_ADDRESS_UNREACHABLE')) {
-        console.log('💡 Network issue - check if Rails server is running with: bin/rails server -b 0.0.0.0');
+        logger.log('💡 Network issue - check if Rails server is running with: bin/rails server -b 0.0.0.0');
       }
       const apiError: ApiError = {
         message: error.response?.data?.message || error.response?.data?.error || 'Failed to fetch categories',
@@ -317,22 +318,8 @@ export const authAPI = {
   },
 
   async createListing(data: ListingRequest): Promise<ListingResponse> {
-    try {
-      console.log('🔵 Creating listing:', data);
-      const response = await api.post('/listings', data);
-      console.log('✅ Listing created successfully:', response.data);
-      return response.data;
-    } catch (error: any) {
-      console.log('❌ Listing creation failed:', error.message);
-      if (error.code === 'NETWORK_ERROR' || error.message.includes('ERR_ADDRESS_UNREACHABLE')) {
-        console.log('💡 Network issue - check if Rails server is running with: bin/rails server -b 0.0.0.0');
-      }
-      const apiError: ApiError = {
-        message: error.response?.data?.message || error.response?.data?.error || 'Failed to create listing',
-        errors: error.response?.data || {},
-      };
-      throw apiError;
-    }
+    const response = await api.post('/listings', data);
+    return response.data;
   },
 
   async getSellingItems(): Promise<ListingResponse[]> {
@@ -347,12 +334,12 @@ export const authAPI = {
 
   async getSharedHits(): Promise<any[]> {
     try {
-      console.log('🔵 Fetching shared hits');
+      logger.log('🔵 Fetching shared hits');
       const response = await api.get('/listings?listing_type=selling&status=active');
-      console.log('✅ Shared hits fetched successfully:', response.data.length, 'hits');
+      logger.log('✅ Shared hits fetched successfully:', response.data.length, 'hits');
       return response.data;
     } catch (error: any) {
-      console.log('❌ Shared hits fetch failed:', error.message);
+      logger.log('❌ Shared hits fetch failed:', error.message);
       const apiError: ApiError = {
         message: error.response?.data?.message || error.response?.data?.error || 'Failed to fetch shared hits',
         errors: error.response?.data || {},
@@ -365,7 +352,7 @@ export const authAPI = {
     try {
       await api.post(`/listings/${hitId}/like`);
     } catch (error: any) {
-      console.log('❌ Like action failed:', error.message);
+      logger.log('❌ Like action failed:', error.message);
       throw error;
     }
   },
@@ -374,7 +361,7 @@ export const authAPI = {
     try {
       await api.delete(`/listings/${hitId}/like`);
     } catch (error: any) {
-      console.log('❌ Unlike action failed:', error.message);
+      logger.log('❌ Unlike action failed:', error.message);
       throw error;
     }
   },
@@ -383,7 +370,7 @@ export const authAPI = {
     try {
       await api.post(`/listings/${hitId}/comments`, { comment });
     } catch (error: any) {
-      console.log('❌ Comment action failed:', error.message);
+      logger.log('❌ Comment action failed:', error.message);
       throw error;
     }
   },
@@ -393,7 +380,7 @@ export const authAPI = {
       const response = await api.get(`/listings/${hitId}/comments`);
       return response.data;
     } catch (error: any) {
-      console.log('❌ Fetch comments failed:', error.message);
+      logger.log('❌ Fetch comments failed:', error.message);
       throw error;
     }
   },
