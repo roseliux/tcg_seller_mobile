@@ -193,7 +193,7 @@ const createSelector = <T extends Record<string, string>>(
   };
 };
 
-const selectCategory = createSelector(CATEGORIES, 'Select Category', 'category');
+const selectCategory = createSelector(CATEGORIES, 'Select Category', 'category_id');
 const selectProductType = createSelector(PRODUCT_TYPES, 'Select Product Type', 'product_type');
 const selectLanguage = createSelector(LANGUAGES, 'Select Language', 'language');
 // const selectCondition = createSelector(CONDITIONS, 'Select Condition', 'condition');
