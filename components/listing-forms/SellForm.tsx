@@ -1,5 +1,4 @@
 import { Text, View } from '@/components/Themed';
-import { authAPI } from '@/services/api';
 import { logger } from '@/services/logger';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router } from 'expo-router';
@@ -15,18 +14,52 @@ import {
   TouchableOpacity
 } from 'react-native';
 
-const CONDITIONS = ['Any', 'Mint', 'Near Mint', 'Excellent', 'Good', 'Light Played', 'Played', 'Poor'];
-const CATEGORIES = ['Pokemon', 'Magic: The Gathering', 'Yu-Gi-Oh!', 'Lorcana', 'One Piece'];
+const CATEGORIES = {
+  'Pokemon': 'pokemon',
+  'Magic: The Gathering': 'magic',
+  'Yu-Gi-Oh!': 'yugioh',
+  'Lorcana': 'lorcana',
+  'One Piece': 'one_piece'
+} as const;
+
+const PRODUCT_TYPES = {
+  'Card': 'card',
+  'Sealed Product': 'sealed',
+  'Bulk': 'bulk',
+  'Deck': 'deck',
+  'Accessory': 'accessory',
+  'Other': 'other'
+} as const;
+
+const LANGUAGES = {
+  'English': 'english',
+  'Spanish': 'spanish',
+  'Japanese': 'japanese',
+  'Other': 'other'
+} as const;
+
+// const CONDITIONS = {
+//   'Any': 'any',
+//   'Mint': 'mint',
+//   'Near Mint': 'near_mint',
+//   'Excellent': 'excellent',
+//   'Good': 'good',
+//   'Light Played': 'light_played',
+//   'Played': 'played',
+//   'Poor': 'poor'
+// } as const;
 
 export default function SellForm() {
   const [form, setForm] = useState({
-    item_title: '',
+    title: '',
     description: '',
     price: '',
-    condition: 'Any',
+    condition: 'any',
+    purpose: 'sell',
+    location_postal_code: '',
+    product_type: 'card',
     category_id: 'pokemon',
-    card_set_id: 'base1',
-    card_location: '',
+    language: 'english'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -50,7 +83,7 @@ export default function SellForm() {
   };
 
   const hasUnsavedChanges = () => {
-    return form.item_title.trim() || form.description.trim() || form.price.trim();
+    return form.title.trim() || form.description.trim() || form.price.trim();
   };
 
   const handleSubmit = async () => {
@@ -58,44 +91,32 @@ export default function SellForm() {
 
     setIsSubmitting(true);
     try {
-      const allowedConditions = [
-        'any',
-        'mint',
-        'near_mint',
-        'excellent',
-        'good',
-        'light_played',
-        'played',
-        'poor'
-      ] as const;
-
-      const normalizedCondition = form.condition.toLowerCase().replace(/\s/g, '_');
-      const condition =
-        allowedConditions.includes(normalizedCondition as typeof allowedConditions[number])
-          ? (normalizedCondition as typeof allowedConditions[number])
-          : 'near_mint';
-
-      const listingRequest = {
-        item_title: form.item_title,
-        description: form.description,
-        price: form.price,
-        listing_type: 'selling' as const,
-        condition,
-        category_id: form.category_id,
-        card_set_id: form.card_set_id,
+      const listingData = {
+        listing: {
+          title: form.title,
+          description: form.description,
+          price: parseFloat(form.price),
+          condition: form.condition,
+          purpose: form.purpose,
+          location_postal_code: form.location_postal_code,
+          product_type: form.product_type,
+          category_id: form.category_id,
+        }
       };
 
-      await authAPI.createListing(listingRequest);
-      logger.log('Creating listing:', listingRequest);
+      logger.log('Creating listing:', listingData);
+      // await authAPI.createListing(listingData);
 
       setForm({
-        item_title: '',
+        title: '',
         description: '',
         price: '',
-        condition: 'Any',
+        condition: 'any',
+        purpose: 'sell',
+        location_postal_code: '',
+        product_type: 'card',
         category_id: 'pokemon',
-        card_set_id: 'base1',
-        card_location: '',
+        language: 'english'
       });
 
       Alert.alert(
@@ -103,10 +124,11 @@ export default function SellForm() {
         'Your item has been listed for sale successfully!',
         [{
           text: 'OK',
-          onPress: () => router.push('/(tabs)/marketplace?tab=selling&refresh=1')
+          onPress: () => router.push('/(tabs)')
         }]
       );
     } catch (error) {
+      logger.error('Failed to create listing:', error);
       Alert.alert('Error', 'Failed to post listing. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -114,52 +136,20 @@ export default function SellForm() {
   };
 
   const validateForm = () => {
-    if (!form.item_title.trim()) {
+    if (!form.title.trim()) {
       Alert.alert('Error', 'Please enter a title for your listing.');
       return false;
     }
-    if (!form.price.trim() || isNaN(Number(form.price))) {
-      Alert.alert('Error', 'Please enter a valid price.');
+    if (!form.price.trim() || isNaN(Number(form.price)) || Number(form.price) <= 0) {
+      Alert.alert('Error', 'Please enter a valid price greater than 0.');
       return false;
     }
-    return true;
-  };
-  const selectCondition = () => {
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: [...CONDITIONS, 'Cancel'],
-          cancelButtonIndex: CONDITIONS.length,
-          title: 'Select Card Condition',
-        },
-        (buttonIndex) => {
-          if (buttonIndex < CONDITIONS.length) {
-            setForm(prev => ({ ...prev, condition: CONDITIONS[buttonIndex] }));
-          }
-        }
-      );
-    } else {
-      Alert.alert('Select Condition', 'Feature coming soon for Android');
+    if (!form.location_postal_code.trim()) {
+      Alert.alert('Error', 'Please enter a postal code.');
+      return false;
     }
-  };
 
-  const selectCategory = () => {
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: [...CATEGORIES, 'Cancel'],
-          cancelButtonIndex: CATEGORIES.length,
-          title: 'Select Category',
-        },
-        (buttonIndex) => {
-          if (buttonIndex < CATEGORIES.length) {
-            setForm(prev => ({ ...prev, category_id: CATEGORIES[buttonIndex] }));
-          }
-        }
-      );
-    } else {
-      Alert.alert('Select Category', 'Feature coming soon for Android');
-    }
+    return true;
   };
 
   const addPhoto = () => {
@@ -174,6 +164,59 @@ export default function SellForm() {
     );
   };
 
+const createSelector = <T extends Record<string, string>>(
+  options: T,
+  title: string,
+  formKey: keyof typeof form
+) => {
+  return () => {
+    const displayLabels = Object.keys(options);
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: [...displayLabels, 'Cancel'],
+          cancelButtonIndex: displayLabels.length,
+          title,
+        },
+        (buttonIndex) => {
+          if (buttonIndex < displayLabels.length) {
+            const selectedLabel = displayLabels[buttonIndex];
+            const selectedValue = options[selectedLabel];
+            setForm(prev => ({ ...prev, [formKey]: selectedValue }));
+          }
+        }
+      );
+    } else {
+      Alert.alert(title, 'Feature coming soon for Android');
+    }
+  };
+};
+
+const selectCategory = createSelector(CATEGORIES, 'Select Category', 'category');
+const selectProductType = createSelector(PRODUCT_TYPES, 'Select Product Type', 'product_type');
+const selectLanguage = createSelector(LANGUAGES, 'Select Language', 'language');
+// const selectCondition = createSelector(CONDITIONS, 'Select Condition', 'condition');
+
+const formatCategoryDisplay = (value: string) => {
+  // Find the key (display label) that matches the value
+  return Object.keys(CATEGORIES).find(
+    key => CATEGORIES[key as keyof typeof CATEGORIES] === value
+  ) || value;
+};
+
+const formatProductTypeDisplay = (value: string) => {
+  return Object.keys(PRODUCT_TYPES).find(
+    key => PRODUCT_TYPES[key as keyof typeof PRODUCT_TYPES] === value
+  ) || value;
+};
+
+const formatLanguageDisplay = (value: string) => {
+  return Object.keys(LANGUAGES).find(
+    key => LANGUAGES[key as keyof typeof LANGUAGES] === value
+  ) || value;
+};
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -185,121 +228,148 @@ export default function SellForm() {
         <TouchableOpacity
           style={[
             styles.postButton,
-            (!form.item_title.trim() || !form.price.trim()) && styles.postButtonDisabled
+            (!form.title.trim() || !form.price.trim() || !form.location_postal_code.trim()) && styles.postButtonDisabled
           ]}
           onPress={handleSubmit}
-          disabled={isSubmitting || !form.item_title.trim() || !form.price.trim()}
+          disabled={isSubmitting || !form.title.trim() || !form.price.trim() || !form.location_postal_code.trim()}
         >
           <Text style={[
             styles.postButtonText,
-            (!form.item_title.trim() || !form.price.trim()) && styles.postButtonTextDisabled
+            (!form.title.trim() || !form.price.trim() || !form.location_postal_code.trim()) && styles.postButtonTextDisabled
           ]}>
             {isSubmitting ? 'Posting...' : 'Post'}
           </Text>
         </TouchableOpacity>
       </View>
 
-    <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-      {/* Photos Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Photos</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosContainer}>
-          <TouchableOpacity style={styles.addPhotoButton} onPress={addPhoto}>
-            <FontAwesome name="camera" size={24} color="#666" />
-            <Text style={styles.addPhotoText}>Add Photo</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
-
-      {/* Title */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Item Title *</Text>
-        <TextInput
-          style={styles.textInput}
-          placeholder="e.g., Charizard Base Set Shadowless PSA 9"
-          placeholderTextColor="#999"
-          value={form.item_title}
-          onChangeText={(text) => setForm(prev => ({ ...prev, item_title: text }))}
-          maxLength={100}
-        />
-        <Text style={styles.characterCount}>{form.item_title.length}/100</Text>
-      </View>
-
-      {/* Category */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Category</Text>
-        <TouchableOpacity style={styles.selectButton} onPress={selectCategory}>
-          <Text style={styles.selectButtonText}>{form.category_id}</Text>
-          <FontAwesome name="chevron-down" size={14} color="#666" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Condition */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Condition</Text>
-        <TouchableOpacity style={styles.selectButton} onPress={selectCondition}>
-          <Text style={styles.selectButtonText}>{form.condition}</Text>
-          <FontAwesome name="chevron-down" size={14} color="#666" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Price */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Price *</Text>
-        <View style={styles.priceContainer}>
-          <Text style={styles.currencySymbol}>$</Text>
-          <TextInput
-            style={styles.priceInput}
-            placeholder="0.00"
-            placeholderTextColor="#999"
-            value={form.price}
-            onChangeText={(text) => setForm(prev => ({ ...prev, price: text }))}
-            keyboardType="decimal-pad"
-            maxLength={10}
-          />
+      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        {/* Photos Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Photos</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosContainer}>
+            <TouchableOpacity style={styles.addPhotoButton} onPress={addPhoto}>
+              <FontAwesome name="camera" size={24} color="#666" />
+              <Text style={styles.addPhotoText}>Add Photo</Text>
+            </TouchableOpacity>
+          </ScrollView>
         </View>
-      </View>
 
-      {/* Description */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Description</Text>
-        <TextInput
-          style={[styles.textInput, styles.descriptionInput]}
-          placeholder="Describe the card's condition, any flaws, and why it's special..."
-          placeholderTextColor="#999"
-          value={form.description}
-          onChangeText={(text) => setForm(prev => ({ ...prev, description: text }))}
-          multiline
-          numberOfLines={4}
-          maxLength={500}
-        />
-        <Text style={styles.characterCount}>{form.description.length}/500</Text>
-      </View>
+        {/* Title */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Listing Title *</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="e.g., Charizard Base Set Shadowless PSA 9"
+            placeholderTextColor="#999"
+            value={form.title}
+            onChangeText={(text) => setForm(prev => ({ ...prev, title: text }))}
+            maxLength={100}
+          />
+          <Text style={styles.characterCount}>{form.title.length}/100</Text>
+        </View>
 
-      {/* Card Location */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Card Location *</Text>
-        <TextInput
-          style={styles.textInput}
-          placeholder="Enter card location (e.g. Hermosillo, Sonora)"
-          placeholderTextColor="#999"
-          value={form.card_location || ''}
-          onChangeText={(text) => setForm(prev => ({ ...prev, card_location: text }))}
-          maxLength={100}
-        />
-      </View>
+        {/* Category */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Category *</Text>
+          <TouchableOpacity style={styles.selectButton} onPress={selectCategory}>
+            <Text style={styles.selectButtonText}>{formatCategoryDisplay(form.category_id)}</Text>
+            <FontAwesome name="chevron-down" size={14} color="#666" />
+          </TouchableOpacity>
+        </View>
 
-      {/* Tips Section */}
-      <View style={[styles.section, styles.tipsSection]}>
-        <Text style={styles.tipsTitle}>💡 Tips for better listings</Text>
-        <Text style={styles.tipText}>• Take clear, well-lit photos from multiple angles</Text>
-        <Text style={styles.tipText}>• Be honest about condition and any flaws</Text>
-        <Text style={styles.tipText}>• Research similar listings for competitive pricing</Text>
-        <Text style={styles.tipText}>• Include relevant keywords in your title</Text>
-      </View>
+        {/* Product Type */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Product Type *</Text>
+          <TouchableOpacity style={styles.selectButton} onPress={selectProductType}>
+            <Text style={styles.selectButtonText}>{formatProductTypeDisplay(form.product_type)}</Text>
+            <FontAwesome name="chevron-down" size={14} color="#666" />
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.bottomPadding} />
-    </ScrollView>
+        {/* Language */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Language *</Text>
+          <TouchableOpacity style={styles.selectButton} onPress={selectLanguage}>
+            <Text style={styles.selectButtonText}>{formatLanguageDisplay(form.language)}</Text>
+            <FontAwesome name="chevron-down" size={14} color="#666" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Condition */}
+        {/* <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Condition *</Text>
+          <TouchableOpacity style={styles.selectButton} onPress={selectCondition}>
+            <Text style={styles.selectButtonText}>{formatConditionDisplay(form.condition)}</Text>
+            <FontAwesome name="chevron-down" size={14} color="#666" />
+          </TouchableOpacity>
+        </View> */}
+
+        {/* Price */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Price *</Text>
+          <View style={styles.priceContainer}>
+            <Text style={styles.currencySymbol}>$</Text>
+            <TextInput
+              style={styles.priceInput}
+              placeholder="0.00"
+              placeholderTextColor="#999"
+              value={form.price}
+              onChangeText={(text) => {
+                const cleaned = text.replace(/[^0-9.]/g, '');
+                const parts = cleaned.split('.');
+                if (parts.length > 2) return;
+                setForm(prev => ({ ...prev, price: cleaned }));
+              }}
+              keyboardType="decimal-pad"
+              // maxLength={10}
+            />
+          </View>
+        </View>
+
+        {/* Description */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Description</Text>
+          <TextInput
+            style={[styles.textInput, styles.descriptionInput]}
+            placeholder="Describe the item's condition, any flaws, and why it's special..."
+            placeholderTextColor="#999"
+            value={form.description}
+            onChangeText={(text) => setForm(prev => ({ ...prev, description: text }))}
+            multiline
+            numberOfLines={4}
+            maxLength={500}
+          />
+          <Text style={styles.characterCount}>{form.description.length}/500</Text>
+        </View>
+
+        {/* Location Postal Code */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Postal Code *</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="e.g., 83224"
+            placeholderTextColor="#999"
+            value={form.location_postal_code}
+            onChangeText={(text) => setForm(prev => ({ ...prev, location_postal_code: text }))}
+            maxLength={5}
+            keyboardType="number-pad"
+          />
+          <Text style={styles.helperText}>
+            Used to help buyers find items near them
+          </Text>
+        </View>
+
+        {/* Tips Section */}
+        <View style={[styles.section, styles.tipsSection]}>
+          <Text style={styles.tipsTitle}>💡 Tips for better listings</Text>
+          <Text style={styles.tipText}>• Take clear, well-lit photos from multiple angles</Text>
+          <Text style={styles.tipText}>• Be honest about condition and any flaws</Text>
+          <Text style={styles.tipText}>• Research similar listings for competitive pricing</Text>
+          <Text style={styles.tipText}>• Include relevant keywords in your title</Text>
+        </View>
+
+        <View style={styles.bottomPadding} />
+      </ScrollView>
 
       <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
     </View>
@@ -396,6 +466,14 @@ const styles = StyleSheet.create({
   selectButtonText: {
     fontSize: 16,
     color: '#000',
+  },
+  placeholderText: {
+    color: '#999',
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 6,
   },
   priceContainer: {
     flexDirection: 'row',
